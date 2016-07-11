@@ -13,7 +13,7 @@ namespace UnitTest
     {
         /*
         To use these tests you will need to put some, or all, the 
-        BAC/BCM (uasset) files in the correct (UnitTest/Bin/Debug/Originals/...)
+        BAC/BCM (uasset) files in the correct folder (UnitTest/Bin/Debug/Originals/...)
         */
 
         [TestMethod]
@@ -81,8 +81,8 @@ namespace UnitTest
             foreach (var file in Directory.GetFiles(@"Originals\BACeff"))
             {
                 var originalBytes = File.ReadAllBytes(file);
-                var bac = BACEff.FromUassetFile(file);
-                BACEff.ToUassetFile(bac, @"Originals\BACeff\testfile.uasset");
+                var bac = BAC.FromUassetFile(file);
+                BAC.ToUassetFile(bac, @"Originals\BACeff\testfile.uasset");
                 var createdBytes = File.ReadAllBytes(@"Originals\BACeff\testfile.uasset");
 
                 Assert.AreEqual(originalBytes.Length, createdBytes.Length);

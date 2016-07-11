@@ -21,12 +21,10 @@ namespace MoveLib.BAC
             catch (Exception ex)
             {
                 Console.WriteLine("Something went wrong. Couldn't create JSON.\n" + ex.Message + " - " + ex.Data);
-                return;
+                throw;
             }
 
             Formatting format = Formatting.Indented;
-            JsonSerializerSettings settings = new JsonSerializerSettings();
-            settings.FloatFormatHandling = FloatFormatHandling.DefaultValue;
 
             var json = JsonConvert.SerializeObject(bac, format, new Newtonsoft.Json.Converters.StringEnumConverter());
 
@@ -51,12 +49,10 @@ namespace MoveLib.BAC
             {
                 ToUassetFile(bac, outFile);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine("Something went wrong. Couldn't create BAC.\n" + ex.Message + " - " + ex.Data);
                 return false;
             }
-
             return true;
         }
 
@@ -67,8 +63,8 @@ namespace MoveLib.BAC
 
             byte[] fileBytes = File.ReadAllBytes(fileName);
 
-            byte[] UassetHeaderBytes = GetUassetHeader(fileBytes);
-            fileBytes = CreateGameBACFromFile(fileBytes);
+            byte[] UassetHeaderBytes = Common.GetUassetHeader(fileBytes);
+            fileBytes = Common.RemoveUassetHeader(fileBytes);
 
             Debug.WriteLine("READING");
             using (var ms = new MemoryStream(fileBytes))
@@ -229,6 +225,21 @@ namespace MoveLib.BAC
                             unk13 = inFile.ReadInt32(),
                             HeaderSize = inFile.ReadInt32(),
                         };
+
+                        if (thisMove.HeaderSize == 0x58)
+                        {
+                            thisMove.Unknown12 = inFile.ReadInt16();
+                            thisMove.Unknown13 = inFile.ReadInt16();
+                            thisMove.Unknown14 = inFile.ReadInt16();
+                            thisMove.Unknown15 = inFile.ReadInt16();
+                            thisMove.Unknown16 = inFile.ReadInt16();
+                            thisMove.Unknown17 = inFile.ReadInt16();
+                            thisMove.Unknown18 = inFile.ReadSingle();
+                            thisMove.Unknown19 = inFile.ReadInt16();
+                            thisMove.Unknown20 = inFile.ReadInt16();
+                            thisMove.Unknown21 = inFile.ReadInt16();
+                            thisMove.Unknown22 = inFile.ReadInt16();
+                        }
 
                         Debug.WriteLine("Name:  {0}\nIndex: {1}\nFirstHitboxFrame: {2}\nLastHitboxFrame: {3}" +
                                 "\nInterruptFrame: {4}\nTotalTicks: {5}, HeaderSize: {6}", thisMove.Name, thisMove.Index, thisMove.FirstHitboxFrame,
@@ -547,12 +558,12 @@ namespace MoveLib.BAC
 
                                     case 7:
                                     {
-                                        if (thisMove.Type7s == null)
+                                        if (thisMove.PhysicsBoxes == null)
                                         {
-                                            thisMove.Type7s = new Type7[count];
+                                            thisMove.PhysicsBoxes = new PhysicsBox[count];
                                         }
 
-                                        Type7 thisType7 = new Type7();
+                                        PhysicsBox thisType7 = new PhysicsBox();
                                         thisType7.TickStart = tickStarts[l];
                                         thisType7.TickEnd = tickEnds[l];
                                         thisType7.X = inFile.ReadSingle();
@@ -577,7 +588,7 @@ namespace MoveLib.BAC
                                             thisType7.Unknown1, thisType7.Unknown2, thisType7.Unknown3,
                                             thisType7.Unknown4, thisType7.Unknown5, thisType7.Unknown6);
 
-                                        thisMove.Type7s[l] = thisType7;
+                                        thisMove.PhysicsBoxes[l] = thisType7;
 
                                         break;
                                     }
@@ -1105,6 +1116,21 @@ namespace MoveLib.BAC
                         outFile.Write(Move.unk13);
                         outFile.Write(Move.HeaderSize);
 
+                        if (Move.HeaderSize == 0x58)
+                        {
+                            outFile.Write(Move.Unknown12);
+                            outFile.Write(Move.Unknown13);
+                            outFile.Write(Move.Unknown14);
+                            outFile.Write(Move.Unknown15);
+                            outFile.Write(Move.Unknown16);
+                            outFile.Write(Move.Unknown17);
+                            outFile.Write(Move.Unknown18);
+                            outFile.Write(Move.Unknown19);
+                            outFile.Write(Move.Unknown20);
+                            outFile.Write(Move.Unknown21);
+                            outFile.Write(Move.Unknown22);
+                        }
+
                         long type0TickOffsetAddress = 0;
                         long type1TickOffsetAddress = 0;
                         long ForceTickOffsetAddress = 0;
@@ -1175,10 +1201,10 @@ namespace MoveLib.BAC
                             outFile.Write(0);
                             outFile.Write(0);
                         }
-                        if (Move.Type7s != null && Move.Type7s.Length > 0)
+                        if (Move.PhysicsBoxes != null && Move.PhysicsBoxes.Length > 0)
                         {
                             outFile.Write((short)7);
-                            outFile.Write((short)Move.Type7s.Length);
+                            outFile.Write((short)Move.PhysicsBoxes.Length);
                             type7TickOffsetAddress = outFile.BaseStream.Position;
                             outFile.Write(0);
                             outFile.Write(0);
@@ -1472,12 +1498,11 @@ namespace MoveLib.BAC
                             }
                         }
 
-                        if (Move.Type7s != null && Move.Type7s.Length > 0)
+                        if (Move.PhysicsBoxes != null && Move.PhysicsBoxes.Length > 0)
                         {
-
                             WriteInt32ToPosition(outFile, type7TickOffsetAddress, (int)(outFile.BaseStream.Position - (type7TickOffsetAddress - 4)));
 
-                            foreach (var type7 in Move.Type7s)
+                            foreach (var type7 in Move.PhysicsBoxes)
                             {
                                 outFile.Write(type7.TickStart);
                                 outFile.Write(type7.TickEnd);
@@ -1485,7 +1510,7 @@ namespace MoveLib.BAC
 
                             WriteInt32ToPosition(outFile, type7TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type7TickOffsetAddress - 4)));
 
-                            foreach (var type7 in Move.Type7s)
+                            foreach (var type7 in Move.PhysicsBoxes)
                             {
                                 outFile.Write(type7.X);
                                 outFile.Write(type7.Y);
@@ -1743,26 +1768,7 @@ namespace MoveLib.BAC
                 0x00, 0x00, 0x00, 0x00
             });
 
-            outPut.AddRange(new byte[]
-            {
-                0x09, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00
-            });
-
-            var tempLengthBytes = BitConverter.GetBytes(outPut.Count);
-            byte[] UassetHeader = file.RawUassetHeaderDontTouch;
-            UassetHeader[0x1b0] = tempLengthBytes[0];
-            UassetHeader[0x1b1] = tempLengthBytes[1];
-            UassetHeader[0x1b2] = tempLengthBytes[2];
-            UassetHeader[0x1b3] = tempLengthBytes[3];
-
-            outPut.InsertRange(0, UassetHeader);
-
-            byte[] UassetEnd = new byte[4];
-            UassetHeader.ToList().CopyTo(0, UassetEnd, 0, 4);
-
-            outPut.AddRange(UassetEnd);
+            outPut = Common.CreateUassetFile(outPut, file.RawUassetHeaderDontTouch);
 
             Debug.WriteLine("Done.");
 
@@ -1854,23 +1860,6 @@ namespace MoveLib.BAC
 
             return sb.ToString();
         }
-
-        private static byte[] CreateGameBACFromFile(byte[] fileBytes)
-        {
-            var tempList = fileBytes.ToList();
-            tempList.RemoveRange(0, 0x1e4 + 36);
-            return tempList.ToArray();
-        }
-
-        private static byte[] GetUassetHeader(byte[] fileBytes)
-        {
-            var tempList = fileBytes.ToList();
-                      
-            byte[] array = new byte[0x1e4];
-            tempList.CopyTo(0, array, 0, 0x1e4);
-
-            return array;
-        }
     }
 
     public class BACFile
@@ -1910,6 +1899,23 @@ namespace MoveLib.BAC
         public int unk13 { get; set; }
         public int HeaderSize { get; set; }
 
+
+        public short Unknown12 { get; set; }
+        public short Unknown13 { get; set; }
+
+        public short Unknown14 { get; set; }
+        public short Unknown15 { get; set; }
+        public short Unknown16 { get; set; }
+        public short Unknown17 { get; set; }
+        public float Unknown18 { get; set; }
+        public short Unknown19 { get; set; }
+
+        public short Unknown20 { get; set; }
+
+        public short Unknown21 { get; set; }
+        public short Unknown22 { get; set; }
+
+
         public AutoCancel[] AutoCancels { get; set; }
         public Type1[] Type1s { get; set; }
         public Force[] Forces { get; set; }
@@ -1917,7 +1923,7 @@ namespace MoveLib.BAC
         public Type4[] Type4s { get; set; } //projectiles
         public Hitbox[] Hitboxes { get; set; }
         public Hurtbox[] Hurtboxes { get; set; }
-        public Type7[] Type7s { get; set; }
+        public PhysicsBox[] PhysicsBoxes { get; set; }
         public Animation[] Animations { get; set; }
         public Type9[] Type9s { get; set; }
         public SoundEffect[] SoundEffects{ get; set; }
@@ -2148,7 +2154,7 @@ namespace MoveLib.BAC
         public float Unknown12 { get; set; }
     }
 
-    public class Type7
+    public class PhysicsBox
     {
         public int TickStart { get; set; }
         public int TickEnd { get; set; }

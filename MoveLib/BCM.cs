@@ -21,12 +21,10 @@ namespace MoveLib.BCM
             catch (Exception ex)
             {
                 Console.WriteLine("Something went wrong. Couldn't create JSON.\n" + ex.Message + " - " + ex.Data);
-                return;
+                throw;
             }
 
             Formatting format = Formatting.Indented;
-            JsonSerializerSettings settings = new JsonSerializerSettings();
-            settings.FloatFormatHandling = FloatFormatHandling.DefaultValue;
 
             var json = JsonConvert.SerializeObject(bcm, format, new Newtonsoft.Json.Converters.StringEnumConverter());
 
@@ -60,29 +58,12 @@ namespace MoveLib.BCM
             return true;
         }
 
-        private static byte[] CreateGameBCMFromFile(byte[] fileBytes)
-        {
-            var tempList = fileBytes.ToList();
-            tempList.RemoveRange(0, 0x1e4 + 36);
-            return tempList.ToArray();
-        }
-
-        private static byte[] GetUassetHeader(byte[] fileBytes)
-        {
-            var tempList = fileBytes.ToList();
-
-            byte[] array = new byte[0x1e4];
-            tempList.CopyTo(0, array, 0, 0x1e4);
-
-            return array;
-        }
-
         public static BCMFile FromUassetFile(string fileName)
         {
             byte[] fileBytes = File.ReadAllBytes(fileName);
 
-            byte[] UassetHeaderBytes = GetUassetHeader(fileBytes);
-            fileBytes = CreateGameBCMFromFile(fileBytes);
+            byte[] UassetHeaderBytes = Common.GetUassetHeader(fileBytes);
+            fileBytes = Common.RemoveUassetHeader(fileBytes);
 
            List<Move> MoveList = new List<Move>();
            List<CancelList> CancelLists = new List<CancelList>();
@@ -880,26 +861,7 @@ namespace MoveLib.BCM
                 0x00, 0x00, 0x00, 0x00
             });
 
-            outPut.AddRange(new byte[]
-            {
-                0x09, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00
-            });
-
-            var tempLengthBytes = BitConverter.GetBytes(outPut.Count);
-            byte[] UassetHeader = file.RawUassetHeaderDontTouch;
-            UassetHeader[0x1b0] = tempLengthBytes[0];
-            UassetHeader[0x1b1] = tempLengthBytes[1];
-            UassetHeader[0x1b2] = tempLengthBytes[2];
-            UassetHeader[0x1b3] = tempLengthBytes[3];
-
-            outPut.InsertRange(0, UassetHeader);
-
-            byte[] UassetEnd = new byte[4];
-            UassetHeader.ToList().CopyTo(0, UassetEnd, 0, 4);
-
-            outPut.AddRange(UassetEnd);
+            outPut = Common.CreateUassetFile(outPut, file.RawUassetHeaderDontTouch);
 
             Debug.WriteLine("Done.");
 

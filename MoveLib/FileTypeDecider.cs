@@ -14,19 +14,12 @@ namespace MoveLib
                 {
                     using (var inFile = new BinaryReader(fs))
                     {
-                        inFile.BaseStream.Seek(0x210, SeekOrigin.Begin);
+                        inFile.BaseStream.Seek(0x18, SeekOrigin.Begin);
+                        int OffsetToStart = inFile.ReadInt32();
+
+                        inFile.BaseStream.Seek(OffsetToStart + 0x24, SeekOrigin.Begin);
+
                         string fileType = new string(inFile.ReadChars(4));
-
-                        Debug.WriteLine("filetype: " + fileType);
-
-                        if (fileType == "#BAC")
-                        {
-                            return FileType.BACeff;
-                        }
-
-                        inFile.BaseStream.Seek(0x208, SeekOrigin.Begin);
-
-                        fileType = new string(inFile.ReadChars(4));
 
                         Debug.WriteLine("filetype: " + fileType);
 
@@ -46,9 +39,9 @@ namespace MoveLib
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Can't figure out what kind of file this is...\n" + ex.Message + " - " + ex.Data);
                 return FileType.Unknown;
             }
+
         }
     }
 
@@ -57,6 +50,5 @@ namespace MoveLib
         Unknown = 0,
         BCM = 1,
         BAC = 2,
-        BACeff = 3
     }
 }

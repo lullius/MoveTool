@@ -34,26 +34,36 @@ namespace MoveTool
                         if (type == FileType.BAC)
                         {
                             Console.WriteLine("BAC file detected. Trying to do BAC to JSON.");
-                            BAC.BacToJson(args[0],
-                                Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) +
-                                ".json");
-                            Console.WriteLine("Done writing file: " + Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) +".json");
-                        }
-                        else if (type == FileType.BACeff)
-                        {
-                            Console.WriteLine("BACeff file detected. Trying to do BAC to JSON.");
-                            BACEff.BacToJson(args[0],
-                                Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) +
-                                ".json");
-                            Console.WriteLine("Done writing file: " + Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) + ".json");
+                            try
+                            {
+                                BAC.BacToJson(args[0],
+                                    Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) +
+                                    ".json");
+                                Console.WriteLine("Done writing file: " + Path.GetDirectoryName(args[0]) + @"\" +
+                                                  Path.GetFileNameWithoutExtension(args[0]) + ".json");
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine("Something went wrong: " + ex.Message + " - " + ex.Data);
+                                Console.Read();
+                            }
                         }
                         else if (type == FileType.BCM)
                         {
-                            Console.WriteLine("BCM file detected. Trying to do BCM to JSON.");
-                            BCM.BcmToJson(args[0],
-                                Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) +
-                                ".json");
-                            Console.WriteLine("Done writing file: " + Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) + ".json");
+                            try
+                            {
+                                Console.WriteLine("BCM file detected. Trying to do BCM to JSON.");
+                                BCM.BcmToJson(args[0],
+                                    Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) +
+                                    ".json");
+                                Console.WriteLine("Done writing file: " + Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) + ".json");
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine("Something went wrong: " + ex.Message + " - " + ex.Data);
+                                Console.Read();
+                            }
+
                         }
                         else if (type == FileType.Unknown)
                         {
@@ -68,12 +78,6 @@ namespace MoveTool
 
                         var success = BAC.JsonToBac(args[0],
                             Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) + ".uasset");
-
-                        if (!success)
-                        {
-                            success = BACEff.JsonToBac(args[0],
-                            Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) + ".uasset");
-                        }
 
                         if (!success)
                         {
@@ -119,12 +123,6 @@ namespace MoveTool
                         BAC.BacToJson(inFile, outFile);
                         Console.WriteLine("Done writing file: " + outFile);
                     }
-                    else if (type == FileType.BACeff)
-                    {
-                        Console.WriteLine("BACeff file detected. Trying to do BAC to JSON.");
-                        BACEff.BacToJson(inFile,outFile);
-                        Console.WriteLine("Done writing file: " + outFile);
-                    }
                     else if (type == FileType.BCM)
                     {
                         Console.WriteLine("BCM file detected. Trying to do BCM to JSON.");
@@ -148,11 +146,6 @@ namespace MoveTool
                     Console.WriteLine("File is json.");
 
                     var success = BAC.JsonToBac(inFile, outFile);
-
-                    if (!success)
-                    {
-                        success = BACEff.JsonToBac(inFile, outFile);
-                    }
 
                     if (!success)
                     {
