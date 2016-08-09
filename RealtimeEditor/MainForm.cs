@@ -74,6 +74,11 @@ namespace RealtimeEditor
 
             foreach (var file in Directory.GetFiles("Originals"))
             {
+                if (!file.ToLower().EndsWith(".uasset"))
+                {
+                    continue;
+                }
+
                 var fileBytes = File.ReadAllBytes(file);
                 fileBytes = Common.RemoveUassetHeader(fileBytes);
                 var temp = fileBytes.ToList();
