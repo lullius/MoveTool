@@ -21,41 +21,73 @@ Looking over the source helped me understand the old format, and the new one is 
 I don't know everyone involved in that project or what they each did so I'll list the ones mentioned in the tool's About page in alphabetical order:
 
 ACCELERATOR
+
 ahfb
+
 Anotak
+
 Banana Ken
+
 Bebopfan
+
 combovid.com
+
 Comeback Mechanic
+
 Dandy J
+
 Dantarion
+
 Error1
+
 Eternal
+
 Gojira
+
 hunterk
+
 Illitirit
+
 Mnszyk
+
 Piecemontee
+
 Polarity
+
 Providenceangle
+
 razer5070
+
 Sindor
+
 sonichurricane.com
+
 SSJ George Bush
+
 Waterine
+
 yeb
+
 Zandwich
+
 Zeipher
+
 zentax.com
 
 I hope I got everyone and that I wrote your names correctly.
 
+
 Dantarion's boxdox was also really helpful!
+
 http://watissf.dantarion.com/sf5/boxdox3/
+
 And the JSON
+
 http://watissf.dantarion.com/sf5/out/json/
 
+
 I would also like to thank Killbox and Venom44 for helping me find a lot of unknowns. Check out their mod (WIP) here:
+
 http://steamcommunity.com/groups/SFVJUGGLEMOD
 
 ### Other stuff
