@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace MoveLib
 {
@@ -52,6 +54,31 @@ namespace MoveLib
             fileBytes.AddRange(UassetEnd);
 
             return fileBytes;
+        }
+
+        public static string GetName(int address, BinaryReader reader)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            reader.BaseStream.Seek(address, SeekOrigin.Begin);
+
+            var c = reader.ReadChar();
+
+            while (c != 0)
+            {
+                sb.Append(c);
+                c = reader.ReadChar();
+            }
+
+            return sb.ToString();
+        }
+
+        public static void WriteInt32ToPosition(BinaryWriter outFile, long position, int Value)
+        {
+            long oldPosition = outFile.BaseStream.Position;
+            outFile.BaseStream.Seek(position, SeekOrigin.Begin);
+            outFile.Write(Value);
+            outFile.BaseStream.Seek(oldPosition, SeekOrigin.Begin);
         }
     }
 }

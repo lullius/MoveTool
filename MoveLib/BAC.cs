@@ -167,7 +167,7 @@ namespace MoveLib.BAC
                         int thisNameAddress = NameAddresses[j];
 
                         inFile.BaseStream.Seek(thisNameAddress, SeekOrigin.Begin);
-                        string Name = GetName(thisNameAddress, inFile);
+                        string Name = Common.GetName(thisNameAddress, inFile);
 
                         inFile.BaseStream.Seek(thisMoveAddress, SeekOrigin.Begin);
 
@@ -210,8 +210,8 @@ namespace MoveLib.BAC
                             InterruptFrame = inFile.ReadInt32(),
                             TotalTicks = inFile.ReadInt32(),
                         
-                            unk1 = inFile.ReadInt32(),
-                            unk2 = inFile.ReadSingle(),
+                            ReturnToOriginalPosition = inFile.ReadInt32(),
+                            Slide = inFile.ReadSingle(),
                             unk3 = inFile.ReadSingle(),
                             unk4 = inFile.ReadSingle(),
                             unk5 = inFile.ReadSingle(),
@@ -402,15 +402,15 @@ namespace MoveLib.BAC
 
                                     case 4:
                                     {
-                                        if (thisMove.Type4s == null)
+                                        if (thisMove.Others == null)
                                         {
-                                            thisMove.Type4s = new Type4[count];
+                                            thisMove.Others = new Other[count];
                                         }
 
                                         long thisType4Address = dataAddress + (l*12);
                                         inFile.BaseStream.Seek(thisType4Address, SeekOrigin.Begin);
 
-                                        Type4 thisType4 = new Type4();
+                                        Other thisType4 = new Other();
 
                                         thisType4.TickStart = tickStarts[l];
                                         thisType4.TickEnd = tickEnds[l];
@@ -442,7 +442,7 @@ namespace MoveLib.BAC
                                         }
                                         Debug.WriteLine(ints);
 
-                                        thisMove.Type4s[l] = thisType4;
+                                        thisMove.Others[l] = thisType4;
 
                                         break;
                                     }
@@ -473,14 +473,14 @@ namespace MoveLib.BAC
                                         thisHitbox.Unknown6 = inFile.ReadInt16();
                                         thisHitbox.Unknown7 = inFile.ReadInt16();
                                         thisHitbox.Unknown8 = inFile.ReadInt16();
-                                        thisHitbox.Unknown9 = inFile.ReadInt16();
+                                        thisHitbox.NumberOfHits = inFile.ReadInt16();
 
-                                        thisHitbox.Flag1 = inFile.ReadByte();
-                                        thisHitbox.Flag2 = inFile.ReadByte();
-                                        thisHitbox.Flag3 = inFile.ReadByte();
+                                        thisHitbox.HitType = inFile.ReadByte();
+                                        thisHitbox.JuggleLimit = inFile.ReadByte();
+                                        thisHitbox.JuggleIncrease = inFile.ReadByte();
                                         thisHitbox.Flag4 = inFile.ReadByte();
 
-                                        thisHitbox.HitEffect = inFile.ReadInt16();
+                                        thisHitbox.HitboxEffectIndex = inFile.ReadInt16();
                                         thisHitbox.Unknown10 = inFile.ReadInt16();
                                         thisHitbox.Unknown11 = inFile.ReadInt32();
 
@@ -491,8 +491,8 @@ namespace MoveLib.BAC
                                             thisHitbox.Unknown1, thisHitbox.Unknown2, thisHitbox.Unknown3,
                                             thisHitbox.Unknown4, thisHitbox.Unknown5, thisHitbox.Unknown6,
                                             thisHitbox.Unknown7,
-                                            thisHitbox.Unknown8, thisHitbox.Unknown9, thisHitbox.Flag1,
-                                            thisHitbox.Flag2, thisHitbox.Flag3, thisHitbox.Flag4, thisHitbox.HitEffect,
+                                            thisHitbox.Unknown8, thisHitbox.NumberOfHits, thisHitbox.HitType,
+                                            thisHitbox.JuggleLimit, thisHitbox.JuggleIncrease, thisHitbox.Flag4, thisHitbox.HitboxEffectIndex,
                                             thisHitbox.Unknown10, thisHitbox.Unknown11);
 
                                         thisMove.Hitboxes[l] = thisHitbox;
@@ -793,7 +793,7 @@ namespace MoveLib.BAC
                         {
                             Type = inFile.ReadInt16(),
                             Index = inFile.ReadInt16(),
-                            Unk1 = inFile.ReadInt32(),
+                            DamageType = inFile.ReadInt32(),
                             Unused1 = inFile.ReadByte(),
                             NumberOfType1 = inFile.ReadByte(),
                             NumberOfType2 = inFile.ReadByte(),
@@ -801,18 +801,18 @@ namespace MoveLib.BAC
                             Damage = inFile.ReadInt16(),
                             Stun = inFile.ReadInt16(),
                             Index9 = inFile.ReadInt32(),
-                            Index10 = inFile.ReadInt16(),
-                            Index11 = inFile.ReadInt16(),
+                            EXBuildAttacker = inFile.ReadInt16(),
+                            EXBuildDefender = inFile.ReadInt16(),
                             Index12 = inFile.ReadInt32(), 
-                            Index13 = inFile.ReadInt32(),
-                            Index14 = inFile.ReadInt16(),
-                            Index15 = inFile.ReadInt16(),
-                            Index16 = inFile.ReadInt16(),
+                            HitStunFramesAttacker = inFile.ReadInt32(),
+                            HitStunFramesDefender = inFile.ReadInt16(),
+                            FuzzyEffect = inFile.ReadInt16(),
+                            RecoveryAnimationFramesDefender = inFile.ReadInt16(),
                             Index17 = inFile.ReadInt16(),
                             Index18 = inFile.ReadInt16(),
                             Index19 = inFile.ReadInt16(),
-                            Index20 = inFile.ReadSingle(),
-                            Index21 = inFile.ReadSingle(),
+                            KnockBack = inFile.ReadSingle(),
+                            FallSpeed = inFile.ReadSingle(),
                             Index22 = inFile.ReadInt32(),
                             Index23 = inFile.ReadInt32(),
                             Index24 = inFile.ReadInt32(),
@@ -821,8 +821,8 @@ namespace MoveLib.BAC
                             OffsetToStartOfType2 = inFile.ReadInt32()
                         };
    
-                        hitboxEffect.Type1s = new HitboxEffectType1[hitboxEffect.NumberOfType1];
-                        hitboxEffect.Type2s = new HitboxEffectType2[hitboxEffect.NumberOfType2];
+                        hitboxEffect.Type1s = new HitboxEffectSoundEffect[hitboxEffect.NumberOfType1];
+                        hitboxEffect.Type2s = new HitboxEffectVisualEffect[hitboxEffect.NumberOfType2];
 
                         int startOfType1 = hitboxEffect.OffsetToStartOfType1 + thisTypeAddress;
                         int startOfType2 = hitboxEffect.OffsetToStartOfType2 + thisTypeAddress;
@@ -833,10 +833,10 @@ namespace MoveLib.BAC
 
                             for (int m = 0; m < hitboxEffect.NumberOfType1; m++)
                             {
-                                HitboxEffectType1 thisType1 = new HitboxEffectType1()
+                                HitboxEffectSoundEffect thisType1 = new HitboxEffectSoundEffect()
                                 {
                                     Unknown1 = inFile.ReadInt16(),
-                                    Unknown2 = inFile.ReadInt16(),
+                                    SoundType = inFile.ReadInt16(),
                                     Unknown3 = inFile.ReadInt32(),
                                     Unknown4 = inFile.ReadInt32()
                                 };
@@ -851,18 +851,18 @@ namespace MoveLib.BAC
 
                             for (int m = 0; m < hitboxEffect.NumberOfType2; m++)
                             {
-                                HitboxEffectType2 thisForce = new HitboxEffectType2()
+                                HitboxEffectVisualEffect thisForce = new HitboxEffectVisualEffect()
                                 {
-                                    Unknown1 = inFile.ReadInt32(),
-                                    Unknown2 = inFile.ReadInt16(),
-                                    Unknown3 = inFile.ReadInt16(),
+                                    EffectType1 = inFile.ReadInt32(),
+                                    EffectType2 = inFile.ReadInt16(),
+                                    EffectType3 = inFile.ReadInt16(),
                                     Unknown4 = inFile.ReadInt16(),
-                                    Unknown5 = inFile.ReadInt16(),
+                                    EffectPosition = inFile.ReadInt16(),
                                     Unknown6 = inFile.ReadInt32(),
                                     Unknown7 = inFile.ReadInt32(),
                                     Unknown8 = inFile.ReadInt32(),
                                     Unknown9 = inFile.ReadInt32(),
-                                    Unknown10 = inFile.ReadSingle(),
+                                    Size = inFile.ReadSingle(),
                                     Unknown11 = inFile.ReadInt32()
                                 };
 
@@ -986,13 +986,7 @@ namespace MoveLib.BAC
             }
         }
 
-        private static void WriteInt32ToPosition(BinaryWriter outFile, long position, int Value)
-        {
-            long oldPosition = outFile.BaseStream.Position;
-            outFile.BaseStream.Seek(position, SeekOrigin.Begin);
-            outFile.Write(Value);
-            outFile.BaseStream.Seek(oldPosition, SeekOrigin.Begin);
-        }
+
 
         public static void ToUassetFile(BACFile file, string OutPutFileName)
         {
@@ -1022,7 +1016,7 @@ namespace MoveLib.BAC
 
 
                 long StartOfMoveTableOffsets = outFile.BaseStream.Position;
-                WriteInt32ToPosition(outFile, StartOfStartOfMoveTableOffsets, (int)StartOfMoveTableOffsets);
+                Common.WriteInt32ToPosition(outFile, StartOfStartOfMoveTableOffsets, (int)StartOfMoveTableOffsets);
                 Debug.WriteLine("StartOfMoveTableOffsets: " + StartOfMoveTableOffsets.ToString("X"));
 
                 for (int i = 0; i < file.MoveLists.Count(); i++)
@@ -1032,7 +1026,7 @@ namespace MoveLib.BAC
 
 
                 long StartOfHitboxEffectsOffsets = outFile.BaseStream.Position;
-                WriteInt32ToPosition(outFile, StartOfStartOfHitboxEffectsOffsets, (int)StartOfHitboxEffectsOffsets);
+                Common.WriteInt32ToPosition(outFile, StartOfStartOfHitboxEffectsOffsets, (int)StartOfHitboxEffectsOffsets);
                 Debug.WriteLine("StartOfHitboxEffectsOffsets: " + StartOfHitboxEffectsOffsets.ToString("X"));
 
                 for (int i = 0; i < file.HitboxEffectses.Count(); i++)
@@ -1049,7 +1043,7 @@ namespace MoveLib.BAC
                 for (int i = 0; i < file.MoveLists.Length; i++)
                 {
                     Debug.WriteLine("Writing MoveTable: " + i);
-                    WriteInt32ToPosition(outFile, StartOfMoveTableOffsets + (i*4), (int)outFile.BaseStream.Position);
+                    Common.WriteInt32ToPosition(outFile, StartOfMoveTableOffsets + (i*4), (int)outFile.BaseStream.Position);
                     long MoveTableBaseAddress = outFile.BaseStream.Position;
 
                     MoveTableBaseAddresses.Add(MoveTableBaseAddress);
@@ -1063,7 +1057,7 @@ namespace MoveLib.BAC
                     outFile.Write(0); //StartOfNameAddressesOffset
 
                     long StartOfMovesOffset = outFile.BaseStream.Position;
-                    WriteInt32ToPosition(outFile, StartOfStartOfMovesOffset, (int)(StartOfMovesOffset - MoveTableBaseAddress));
+                    Common.WriteInt32ToPosition(outFile, StartOfStartOfMovesOffset, (int)(StartOfMovesOffset - MoveTableBaseAddress));
 
                     Debug.WriteLine("MoveCount: " + file.MoveLists[i].Moves.Length);
 
@@ -1074,7 +1068,7 @@ namespace MoveLib.BAC
 
                     long StartOfMovesNamesOffset = outFile.BaseStream.Position;
                     MoveTableBaseNameOffsets.Add(StartOfMovesNamesOffset);
-                    WriteInt32ToPosition(outFile, StartOfStartOfMovesNamesOffset, (int)(StartOfMovesNamesOffset - MoveTableBaseAddress));
+                    Common.WriteInt32ToPosition(outFile, StartOfStartOfMovesNamesOffset, (int)(StartOfMovesNamesOffset - MoveTableBaseAddress));
 
                     Debug.WriteLine("Names: " + StartOfMovesNamesOffset.ToString("X"));
 
@@ -1090,19 +1084,19 @@ namespace MoveLib.BAC
                     {
                         if (Move == null)
                         {
-                            WriteInt32ToPosition(outFile, StartOfMovesOffset +(j*4), 0);
+                            Common.WriteInt32ToPosition(outFile, StartOfMovesOffset +(j*4), 0);
                             j++;
                             continue;
                         }
 
-                        WriteInt32ToPosition(outFile, StartOfMovesOffset +(j*4), (int)(outFile.BaseStream.Position - MoveTableBaseAddress));
+                        Common.WriteInt32ToPosition(outFile, StartOfMovesOffset +(j*4), (int)(outFile.BaseStream.Position - MoveTableBaseAddress));
 
                         outFile.Write(Move.FirstHitboxFrame);
                         outFile.Write(Move.LastHitboxFrame);
                         outFile.Write(Move.InterruptFrame);
                         outFile.Write(Move.TotalTicks);
-                        outFile.Write(Move.unk1);
-                        outFile.Write(Move.unk2);
+                        outFile.Write(Move.ReturnToOriginalPosition);
+                        outFile.Write(Move.Slide);
                         outFile.Write(Move.unk3);
                         outFile.Write(Move.unk4);
                         outFile.Write(Move.unk5);
@@ -1177,10 +1171,10 @@ namespace MoveLib.BAC
                             outFile.Write(0);
                             outFile.Write(0);
                         }
-                        if (Move.Type4s != null && Move.Type4s.Length > 0)
+                        if (Move.Others != null && Move.Others.Length > 0)
                         {
                             outFile.Write((short)4);
-                            outFile.Write((short)Move.Type4s.Length);
+                            outFile.Write((short)Move.Others.Length);
                             type4TickOffsetAddress = outFile.BaseStream.Position;
                             outFile.Write(0);
                             outFile.Write(0);
@@ -1256,7 +1250,7 @@ namespace MoveLib.BAC
                             List<long> IntOffsets = new List<long>();
                             List<long> IntPositions = new List<long>();
 
-                            WriteInt32ToPosition(outFile, type0TickOffsetAddress, (int)(outFile.BaseStream.Position - (type0TickOffsetAddress-4)));
+                            Common.WriteInt32ToPosition(outFile, type0TickOffsetAddress, (int)(outFile.BaseStream.Position - (type0TickOffsetAddress-4)));
 
                             foreach (var type0 in Move.AutoCancels)
                             {
@@ -1264,7 +1258,7 @@ namespace MoveLib.BAC
                                 outFile.Write(type0.TickEnd);
                             }
 
-                            WriteInt32ToPosition(outFile, type0TickOffsetAddress+4, (int)(outFile.BaseStream.Position - (type0TickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, type0TickOffsetAddress+4, (int)(outFile.BaseStream.Position - (type0TickOffsetAddress - 4)));
 
                             foreach (var type0 in Move.AutoCancels)
                             {
@@ -1298,13 +1292,13 @@ namespace MoveLib.BAC
 
                             for (int k = 0; k < type0Offsets.Count; k++)
                             {
-                                WriteInt32ToPosition(outFile, IntOffsets[k], (int)(IntPositions[k]-type0Offsets[k]));
+                                Common.WriteInt32ToPosition(outFile, IntOffsets[k], (int)(IntPositions[k]-type0Offsets[k]));
                             }
                         }
 
                         if (Move.Type1s != null && Move.Type1s.Length > 0)
                         {
-                            WriteInt32ToPosition(outFile, type1TickOffsetAddress, (int)(outFile.BaseStream.Position - (type1TickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, type1TickOffsetAddress, (int)(outFile.BaseStream.Position - (type1TickOffsetAddress - 4)));
 
                             foreach (var type1 in Move.Type1s)
                             {
@@ -1312,7 +1306,7 @@ namespace MoveLib.BAC
                                 outFile.Write(type1.TickEnd);
                             }
 
-                            WriteInt32ToPosition(outFile, type1TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type1TickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, type1TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type1TickOffsetAddress - 4)));
 
                             foreach (var type1 in Move.Type1s)
                             {
@@ -1323,7 +1317,7 @@ namespace MoveLib.BAC
 
                         if (Move.Forces != null && Move.Forces.Length > 0)
                         {
-                            WriteInt32ToPosition(outFile, ForceTickOffsetAddress, (int)(outFile.BaseStream.Position - (ForceTickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, ForceTickOffsetAddress, (int)(outFile.BaseStream.Position - (ForceTickOffsetAddress - 4)));
 
                             foreach (var Force in Move.Forces)
                             {
@@ -1331,7 +1325,7 @@ namespace MoveLib.BAC
                                 outFile.Write(Force.TickEnd);
                             }
 
-                            WriteInt32ToPosition(outFile, ForceTickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (ForceTickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, ForceTickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (ForceTickOffsetAddress - 4)));
 
                             foreach (var Force in Move.Forces)
                             {
@@ -1342,7 +1336,7 @@ namespace MoveLib.BAC
 
                         if (Move.Cancels != null && Move.Cancels.Length > 0)
                         {
-                            WriteInt32ToPosition(outFile, type3TickOffsetAddress, (int)(outFile.BaseStream.Position - (type3TickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, type3TickOffsetAddress, (int)(outFile.BaseStream.Position - (type3TickOffsetAddress - 4)));
 
                             foreach (var type3 in Move.Cancels)
                             {
@@ -1350,7 +1344,7 @@ namespace MoveLib.BAC
                                 outFile.Write(type3.TickEnd);
                             }
 
-                            WriteInt32ToPosition(outFile, type3TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type3TickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, type3TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type3TickOffsetAddress - 4)));
 
                             foreach (var type3 in Move.Cancels)
                             {
@@ -1359,23 +1353,23 @@ namespace MoveLib.BAC
                             }
                         }
 
-                        if (Move.Type4s != null && Move.Type4s.Length > 0)
+                        if (Move.Others != null && Move.Others.Length > 0)
                         {
                             List<long> type4Offsets = new List<long>();
                             List<long> IntOffsets = new List<long>();
                             List<long> IntPositions = new List<long>();
 
-                            WriteInt32ToPosition(outFile, type4TickOffsetAddress, (int)(outFile.BaseStream.Position - (type4TickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, type4TickOffsetAddress, (int)(outFile.BaseStream.Position - (type4TickOffsetAddress - 4)));
 
-                            foreach (var type4 in Move.Type4s)
+                            foreach (var type4 in Move.Others)
                             {
                                 outFile.Write(type4.TickStart);
                                 outFile.Write(type4.TickEnd);
                             }
 
-                            WriteInt32ToPosition(outFile, type4TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type4TickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, type4TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type4TickOffsetAddress - 4)));
 
-                            foreach (var type4 in Move.Type4s)
+                            foreach (var type4 in Move.Others)
                             {
                                 if (type4.Ints.Length != 0)
                                 {
@@ -1391,7 +1385,7 @@ namespace MoveLib.BAC
                                 outFile.Write(0);
                             }
 
-                            foreach (var type4 in Move.Type4s)
+                            foreach (var type4 in Move.Others)
                             {
                                 if (type4.Ints.Length != 0)
                                 {
@@ -1405,14 +1399,13 @@ namespace MoveLib.BAC
 
                             for (int k = 0; k < type4Offsets.Count; k++)
                             {
-                                WriteInt32ToPosition(outFile, IntOffsets[k], (int)(IntPositions[k] - type4Offsets[k]));
+                                Common.WriteInt32ToPosition(outFile, IntOffsets[k], (int)(IntPositions[k] - type4Offsets[k]));
                             }
                         }
 
                         if (Move.Hitboxes != null && Move.Hitboxes.Length > 0)
                         {
-
-                            WriteInt32ToPosition(outFile, HitboxTickOffsetAddress, (int)(outFile.BaseStream.Position - (HitboxTickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, HitboxTickOffsetAddress, (int)(outFile.BaseStream.Position - (HitboxTickOffsetAddress - 4)));
 
                             foreach (var Hitbox in Move.Hitboxes)
                             {
@@ -1420,7 +1413,7 @@ namespace MoveLib.BAC
                                 outFile.Write(Hitbox.TickEnd);
                             }
 
-                            WriteInt32ToPosition(outFile, HitboxTickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (HitboxTickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, HitboxTickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (HitboxTickOffsetAddress - 4)));
 
                             foreach (var Hitbox in Move.Hitboxes)
                             {
@@ -1440,14 +1433,14 @@ namespace MoveLib.BAC
                                 outFile.Write(Hitbox.Unknown6);
                                 outFile.Write(Hitbox.Unknown7);
                                 outFile.Write(Hitbox.Unknown8);
-                                outFile.Write(Hitbox.Unknown9);
+                                outFile.Write(Hitbox.NumberOfHits);
 
-                                outFile.Write(Hitbox.Flag1);
-                                outFile.Write(Hitbox.Flag2);
-                                outFile.Write(Hitbox.Flag3);
+                                outFile.Write(Hitbox.HitType);
+                                outFile.Write(Hitbox.JuggleLimit);
+                                outFile.Write(Hitbox.JuggleIncrease);
                                 outFile.Write(Hitbox.Flag4);
 
-                                outFile.Write(Hitbox.HitEffect);
+                                outFile.Write(Hitbox.HitboxEffectIndex);
                                 outFile.Write(Hitbox.Unknown10);
                                 outFile.Write(Hitbox.Unknown11);
                             }
@@ -1455,7 +1448,7 @@ namespace MoveLib.BAC
 
                         if (Move.Hurtboxes != null && Move.Hurtboxes.Length > 0)
                         {
-                            WriteInt32ToPosition(outFile, HurtboxTickOffsetAddress, (int)(outFile.BaseStream.Position - (HurtboxTickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, HurtboxTickOffsetAddress, (int)(outFile.BaseStream.Position - (HurtboxTickOffsetAddress - 4)));
 
                             foreach (var Hurtbox in Move.Hurtboxes)
                             {
@@ -1463,7 +1456,7 @@ namespace MoveLib.BAC
                                 outFile.Write(Hurtbox.TickEnd);
                             }
 
-                            WriteInt32ToPosition(outFile, HurtboxTickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (HurtboxTickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, HurtboxTickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (HurtboxTickOffsetAddress - 4)));
 
                             foreach (var Hurtbox in Move.Hurtboxes)
                             {
@@ -1500,7 +1493,7 @@ namespace MoveLib.BAC
 
                         if (Move.PhysicsBoxes != null && Move.PhysicsBoxes.Length > 0)
                         {
-                            WriteInt32ToPosition(outFile, type7TickOffsetAddress, (int)(outFile.BaseStream.Position - (type7TickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, type7TickOffsetAddress, (int)(outFile.BaseStream.Position - (type7TickOffsetAddress - 4)));
 
                             foreach (var type7 in Move.PhysicsBoxes)
                             {
@@ -1508,7 +1501,7 @@ namespace MoveLib.BAC
                                 outFile.Write(type7.TickEnd);
                             }
 
-                            WriteInt32ToPosition(outFile, type7TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type7TickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, type7TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type7TickOffsetAddress - 4)));
 
                             foreach (var type7 in Move.PhysicsBoxes)
                             {
@@ -1531,7 +1524,7 @@ namespace MoveLib.BAC
 
                         if (Move.Animations != null && Move.Animations.Length > 0)
                         {
-                            WriteInt32ToPosition(outFile, type8TickOffsetAddress, (int)(outFile.BaseStream.Position - (type8TickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, type8TickOffsetAddress, (int)(outFile.BaseStream.Position - (type8TickOffsetAddress - 4)));
 
                             foreach (var type8 in Move.Animations)
                             {
@@ -1539,7 +1532,7 @@ namespace MoveLib.BAC
                                 outFile.Write(type8.TickEnd);
                             }
 
-                            WriteInt32ToPosition(outFile, type8TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type8TickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, type8TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type8TickOffsetAddress - 4)));
 
                             foreach (var type8 in Move.Animations)
                             {
@@ -1554,7 +1547,7 @@ namespace MoveLib.BAC
 
                         if (Move.Type9s != null && Move.Type9s.Length > 0)
                         {
-                            WriteInt32ToPosition(outFile, type9TickOffsetAddress, (int)(outFile.BaseStream.Position - (type9TickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, type9TickOffsetAddress, (int)(outFile.BaseStream.Position - (type9TickOffsetAddress - 4)));
 
                             foreach (var type9 in Move.Type9s)
                             {
@@ -1562,7 +1555,7 @@ namespace MoveLib.BAC
                                 outFile.Write(type9.TickEnd);
                             }
 
-                            WriteInt32ToPosition(outFile, type9TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type9TickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, type9TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type9TickOffsetAddress - 4)));
 
                             foreach (var type9 in Move.Type9s)
                             {
@@ -1574,7 +1567,7 @@ namespace MoveLib.BAC
 
                         if (Move.SoundEffects != null && Move.SoundEffects.Length > 0)
                         {
-                            WriteInt32ToPosition(outFile, type10TickOffsetAddress, (int)(outFile.BaseStream.Position - (type10TickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, type10TickOffsetAddress, (int)(outFile.BaseStream.Position - (type10TickOffsetAddress - 4)));
 
                             foreach (var type10 in Move.SoundEffects)
                             {
@@ -1582,7 +1575,7 @@ namespace MoveLib.BAC
                                 outFile.Write(type10.TickEnd);
                             }
 
-                            WriteInt32ToPosition(outFile, type10TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type10TickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, type10TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type10TickOffsetAddress - 4)));
 
                             foreach (var type10 in Move.SoundEffects)
                             {
@@ -1598,7 +1591,7 @@ namespace MoveLib.BAC
 
                         if (Move.VisualEffects != null && Move.VisualEffects.Length > 0)
                         {
-                            WriteInt32ToPosition(outFile, type11TickOffsetAddress, (int)(outFile.BaseStream.Position - (type11TickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, type11TickOffsetAddress, (int)(outFile.BaseStream.Position - (type11TickOffsetAddress - 4)));
 
                             foreach (var type11 in Move.VisualEffects)
                             {
@@ -1606,7 +1599,7 @@ namespace MoveLib.BAC
                                 outFile.Write(type11.TickEnd);
                             }
 
-                            WriteInt32ToPosition(outFile, type11TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type11TickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, type11TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type11TickOffsetAddress - 4)));
 
                             foreach (var type11 in Move.VisualEffects)
                             {
@@ -1630,7 +1623,7 @@ namespace MoveLib.BAC
 
                         if (Move.Positions != null && Move.Positions.Length > 0)
                         {
-                            WriteInt32ToPosition(outFile, PositionTickOffsetAddress, (int)(outFile.BaseStream.Position - (PositionTickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, PositionTickOffsetAddress, (int)(outFile.BaseStream.Position - (PositionTickOffsetAddress - 4)));
 
                             foreach (var Position in Move.Positions)
                             {
@@ -1638,7 +1631,7 @@ namespace MoveLib.BAC
                                 outFile.Write(Position.TickEnd);
                             }
 
-                            WriteInt32ToPosition(outFile, PositionTickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (PositionTickOffsetAddress - 4)));
+                            Common.WriteInt32ToPosition(outFile, PositionTickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (PositionTickOffsetAddress - 4)));
 
                             foreach (var Position in Move.Positions)
                             {
@@ -1658,11 +1651,11 @@ namespace MoveLib.BAC
                 {
                     if (file.HitboxEffectses[i].HIT_STAND == null)
                     {
-                        WriteInt32ToPosition(outFile, StartOfHitboxEffectsOffsets + (i * 4), 0);
+                        Common.WriteInt32ToPosition(outFile, StartOfHitboxEffectsOffsets + (i * 4), 0);
                         continue;
                     }
 
-                    WriteInt32ToPosition(outFile, StartOfHitboxEffectsOffsets + (i*4), (int)outFile.BaseStream.Position);
+                    Common.WriteInt32ToPosition(outFile, StartOfHitboxEffectsOffsets + (i*4), (int)outFile.BaseStream.Position);
 
                     long HitboxEffectsBasePosition = outFile.BaseStream.Position;
 
@@ -1671,45 +1664,45 @@ namespace MoveLib.BAC
                         outFile.Write(0);
                     }
 
-                    WriteInt32ToPosition(outFile, HitboxEffectsBasePosition, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
+                    Common.WriteInt32ToPosition(outFile, HitboxEffectsBasePosition, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
                     WriteHitboxEffect(outFile, file.HitboxEffectses[i].HIT_STAND);
-                    WriteInt32ToPosition(outFile, HitboxEffectsBasePosition +4, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
+                    Common.WriteInt32ToPosition(outFile, HitboxEffectsBasePosition +4, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
                     WriteHitboxEffect(outFile, file.HitboxEffectses[i].HIT_CROUCH);
-                    WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 8, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
+                    Common.WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 8, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
                     WriteHitboxEffect(outFile, file.HitboxEffectses[i].HIT_AIR);
-                    WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 12, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
+                    Common.WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 12, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
                     WriteHitboxEffect(outFile, file.HitboxEffectses[i].HIT_UNKNOWN);
-                    WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 16, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
+                    Common.WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 16, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
                     WriteHitboxEffect(outFile, file.HitboxEffectses[i].HIT_UNKNOWN2);
-                    WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 20, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
+                    Common.WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 20, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
                     WriteHitboxEffect(outFile, file.HitboxEffectses[i].GUARD_STAND);
-                    WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 24, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
+                    Common.WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 24, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
                     WriteHitboxEffect(outFile, file.HitboxEffectses[i].GUARD_CROUCH);
-                    WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 28, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
+                    Common.WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 28, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
                     WriteHitboxEffect(outFile, file.HitboxEffectses[i].GUARD_AIR);
-                    WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 32, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
+                    Common.WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 32, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
                     WriteHitboxEffect(outFile, file.HitboxEffectses[i].GUARD_UNKNOWN);
-                    WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 36, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
+                    Common.WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 36, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
                     WriteHitboxEffect(outFile, file.HitboxEffectses[i].GUARD_UNKNOWN2);
-                    WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 40, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
+                    Common.WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 40, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
                     WriteHitboxEffect(outFile, file.HitboxEffectses[i].COUNTERHIT_STAND);
-                    WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 44, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
+                    Common.WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 44, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
                     WriteHitboxEffect(outFile, file.HitboxEffectses[i].COUNTERHIT_CROUCH);
-                    WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 48, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
+                    Common.WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 48, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
                     WriteHitboxEffect(outFile, file.HitboxEffectses[i].COUNTERHIT_AIR);
-                    WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 52, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
+                    Common.WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 52, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
                     WriteHitboxEffect(outFile, file.HitboxEffectses[i].COUNTERHIT_UNKNOWN);
-                    WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 56, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
+                    Common.WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 56, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
                     WriteHitboxEffect(outFile, file.HitboxEffectses[i].COUNTERHIT_UNKNOWN2);
-                    WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 60, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
+                    Common.WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 60, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
                     WriteHitboxEffect(outFile, file.HitboxEffectses[i].UNKNOWN_STAND);
-                    WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 64, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
+                    Common.WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 64, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
                     WriteHitboxEffect(outFile, file.HitboxEffectses[i].UNKNOWN_CROUCH);
-                    WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 68, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
+                    Common.WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 68, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
                     WriteHitboxEffect(outFile, file.HitboxEffectses[i].UNKNOWN_AIR);
-                    WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 72, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
+                    Common.WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 72, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
                     WriteHitboxEffect(outFile, file.HitboxEffectses[i].UNKNOWN_UNKNOWN);
-                    WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 76, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
+                    Common.WriteInt32ToPosition(outFile, HitboxEffectsBasePosition + 76, (int)(outFile.BaseStream.Position - HitboxEffectsBasePosition));
                     WriteHitboxEffect(outFile, file.HitboxEffectses[i].UNKNOWN_UNKNOWN2);
                 }
 
@@ -1736,10 +1729,10 @@ namespace MoveLib.BAC
                    {
                        if (file.MoveLists[i].Moves[k] == null)
                        {
-                           WriteInt32ToPosition(outFile, MoveTableBaseNameOffsets[i] + (k * 4), 0);
+                           Common.WriteInt32ToPosition(outFile, MoveTableBaseNameOffsets[i] + (k * 4), 0);
                            continue;
                        }
-                       WriteInt32ToPosition(outFile, MoveTableBaseNameOffsets[i] + (k * 4), (int)(NamePositions[0] - MoveTableBaseAddresses[i]));
+                       Common.WriteInt32ToPosition(outFile, MoveTableBaseNameOffsets[i] + (k * 4), (int)(NamePositions[0] - MoveTableBaseAddresses[i]));
                        NamePositions.RemoveAt(0);
                    }
 
@@ -1781,7 +1774,7 @@ namespace MoveLib.BAC
 
             outFile.Write(effect.Type);
             outFile.Write(effect.Index);
-            outFile.Write(effect.Unk1);
+            outFile.Write(effect.DamageType);
             outFile.Write(effect.Unused1);
             outFile.Write(effect.NumberOfType1);
             outFile.Write(effect.NumberOfType2);
@@ -1789,18 +1782,18 @@ namespace MoveLib.BAC
             outFile.Write(effect.Damage);
             outFile.Write(effect.Stun);
             outFile.Write(effect.Index9);
-            outFile.Write(effect.Index10);
-            outFile.Write(effect.Index11);
+            outFile.Write(effect.EXBuildAttacker);
+            outFile.Write(effect.EXBuildDefender);
             outFile.Write(effect.Index12);
-            outFile.Write(effect.Index13);
-            outFile.Write(effect.Index14);
-            outFile.Write(effect.Index15);
-            outFile.Write(effect.Index16);
+            outFile.Write(effect.HitStunFramesAttacker);
+            outFile.Write(effect.HitStunFramesDefender);
+            outFile.Write(effect.FuzzyEffect);
+            outFile.Write(effect.RecoveryAnimationFramesDefender);
             outFile.Write(effect.Index17);
             outFile.Write(effect.Index18);
             outFile.Write(effect.Index19);
-            outFile.Write(effect.Index20);
-            outFile.Write(effect.Index21);
+            outFile.Write(effect.KnockBack);
+            outFile.Write(effect.FallSpeed);
             outFile.Write(effect.Index22);
             outFile.Write(effect.Index23);
             outFile.Write(effect.Index24);
@@ -1814,11 +1807,11 @@ namespace MoveLib.BAC
             {
                 if (i == 0)
                 {
-                    WriteInt32ToPosition(outFile, OffsetToType1Address,
+                    Common.WriteInt32ToPosition(outFile, OffsetToType1Address,
                         (int) (outFile.BaseStream.Position - StartOfEffectAddress));
                 }
                 outFile.Write(effect.Type1s[i].Unknown1);
-                outFile.Write(effect.Type1s[i].Unknown2);
+                outFile.Write(effect.Type1s[i].SoundType);
                 outFile.Write(effect.Type1s[i].Unknown3);
                 outFile.Write(effect.Type1s[i].Unknown4);
             }
@@ -1827,38 +1820,21 @@ namespace MoveLib.BAC
             {
                 if (i == 0)
                 {
-                    WriteInt32ToPosition(outFile, OffsetToType1Address + 4,
+                    Common.WriteInt32ToPosition(outFile, OffsetToType1Address + 4,
                         (int) (outFile.BaseStream.Position - StartOfEffectAddress));
                 }
-                outFile.Write(effect.Type2s[i].Unknown1);
-                outFile.Write(effect.Type2s[i].Unknown2);
-                outFile.Write(effect.Type2s[i].Unknown3);
+                outFile.Write(effect.Type2s[i].EffectType1);
+                outFile.Write(effect.Type2s[i].EffectType2);
+                outFile.Write(effect.Type2s[i].EffectType3);
                 outFile.Write(effect.Type2s[i].Unknown4);
-                outFile.Write(effect.Type2s[i].Unknown5);
+                outFile.Write(effect.Type2s[i].EffectPosition);
                 outFile.Write(effect.Type2s[i].Unknown6);
                 outFile.Write(effect.Type2s[i].Unknown7);
                 outFile.Write(effect.Type2s[i].Unknown8);
                 outFile.Write(effect.Type2s[i].Unknown9);
-                outFile.Write(effect.Type2s[i].Unknown10);
+                outFile.Write(effect.Type2s[i].Size);
                 outFile.Write(effect.Type2s[i].Unknown11);
             }
-        }
-
-        private static string GetName(int address, BinaryReader reader)
-        {
-            StringBuilder sb = new StringBuilder();
-
-            reader.BaseStream.Seek(address, SeekOrigin.Begin);
-
-            var c = reader.ReadChar();
-
-            while (c != 0)
-            {
-                sb.Append(c);
-                c = reader.ReadChar();
-            }
-
-            return sb.ToString();
         }
     }
 
@@ -1884,8 +1860,8 @@ namespace MoveLib.BAC
         public int InterruptFrame { get; set; }
         public int TotalTicks { get; set; }
 
-        public int unk1 { get; set; }
-        public float unk2 { get; set; }
+        public int ReturnToOriginalPosition { get; set; }
+        public float Slide { get; set; }
         public float unk3 { get; set; }
         public float unk4 { get; set; }
         public float unk5 { get; set; }
@@ -1920,7 +1896,7 @@ namespace MoveLib.BAC
         public Type1[] Type1s { get; set; }
         public Force[] Forces { get; set; }
         public Cancel[] Cancels { get; set; }
-        public Type4[] Type4s { get; set; } //projectiles
+        public Other[] Others { get; set; } //projectiles
         public Hitbox[] Hitboxes { get; set; }
         public Hurtbox[] Hurtboxes { get; set; }
         public PhysicsBox[] PhysicsBoxes { get; set; }
@@ -1960,7 +1936,7 @@ namespace MoveLib.BAC
     {
         public short Type { get; set; }
         public short Index { get; set; }
-        public int Unk1 { get; set; }
+        public int DamageType { get; set; }
         public byte Unused1 { get; set; }       //
         public byte NumberOfType1 { get; set; } // Flags?
         public byte NumberOfType2 { get; set; } //
@@ -1969,20 +1945,20 @@ namespace MoveLib.BAC
         public short Stun { get; set; }
 
         public int Index9 { get; set; } //0?
-        public short Index10 { get; set; }
-        public short Index11 { get; set; }
+        public short EXBuildAttacker { get; set; }
+        public short EXBuildDefender { get; set; }
         public int Index12 { get; set; } //0?
-        public int Index13 { get; set; }
+        public int HitStunFramesAttacker { get; set; }
 
-        public short Index14 { get; set; }
-        public short Index15 { get; set; }
-        public short Index16 { get; set; }
+        public short HitStunFramesDefender { get; set; }
+        public short FuzzyEffect { get; set; }
+        public short RecoveryAnimationFramesDefender { get; set; }
         public short Index17 { get; set; }
         public short Index18 { get; set; }
         public short Index19 { get; set; }
-        public float Index20 { get; set; }
+        public float KnockBack { get; set; }
 
-        public float Index21 { get; set; }
+        public float FallSpeed { get; set; }
         public int Index22 { get; set; } //0?
         public int Index23 { get; set; } //0?
         public int Index24 { get; set; } //0?
@@ -1991,30 +1967,30 @@ namespace MoveLib.BAC
         public int OffsetToStartOfType1 { get; set; }
         public int OffsetToStartOfType2 { get; set; }
 
-        public HitboxEffectType1[] Type1s { get; set; }
-        public HitboxEffectType2[] Type2s { get; set; }
+        public HitboxEffectSoundEffect[] Type1s { get; set; }
+        public HitboxEffectVisualEffect[] Type2s { get; set; }
     }
 
-    public class HitboxEffectType1
+    public class HitboxEffectSoundEffect
     {
         public short Unknown1 { get; set;  }
-        public short Unknown2 { get; set; }
+        public short SoundType { get; set; }
         public int Unknown3 { get; set; }
         public int Unknown4 { get; set; }
     }
 
-    public class HitboxEffectType2
+    public class HitboxEffectVisualEffect
     {
-        public int Unknown1 { get; set; }
-        public short Unknown2 { get; set; }
-        public short Unknown3 { get; set; }
+        public int EffectType1 { get; set; }
+        public short EffectType2 { get; set; }
+        public short EffectType3 { get; set; }
         public short Unknown4 { get; set; }
-        public short Unknown5 { get; set; }
+        public short EffectPosition { get; set; }
         public int Unknown6 { get; set; } //0?
         public int Unknown7 { get; set; } //0?
         public int Unknown8 { get; set; } //0?
         public int Unknown9 { get; set; } //0?
-        public float Unknown10 { get; set; }
+        public float Size { get; set; }
         public int Unknown11 { get; set; } //0?
     }
 
@@ -2073,7 +2049,7 @@ namespace MoveLib.BAC
         public int Type { get; set; }
     }
 
-    public class Type4 //Projectiles and other BACeff stuff.
+    public class Other //Projectiles and other BACeff stuff.
     {
         public int TickStart { get; set; }
         public int TickEnd { get; set; }
@@ -2107,14 +2083,14 @@ namespace MoveLib.BAC
         public short Unknown6 { get; set; }
         public short Unknown7 { get; set; }
         public short Unknown8 { get; set; }
-        public short Unknown9 { get; set; }
+        public short NumberOfHits { get; set; }
 
-        public byte Flag1 { get; set; }
-        public byte Flag2 { get; set; }
-        public byte Flag3 { get; set; }
+        public byte HitType { get; set; }
+        public byte JuggleLimit { get; set; }
+        public byte JuggleIncrease { get; set; }
         public byte Flag4 { get; set; }
 
-        public short HitEffect { get; set; }
+        public short HitboxEffectIndex { get; set; }
         public short Unknown10 { get; set; }
         public int Unknown11 { get; set; }
     }

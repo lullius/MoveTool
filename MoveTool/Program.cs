@@ -13,10 +13,10 @@ namespace MoveTool
             if (args.Length == 0)
             {
                 Console.WriteLine("\n");
-                Console.WriteLine("BAC/BCM to JSON: MoveTool.exe InFile.uasset OutFile.json");
-                Console.WriteLine("JSON to BAC/BCM: MoveTool.exe InFile.json OutFile.uasset");
+                Console.WriteLine("BAC/BCM/BCH to JSON: MoveTool.exe InFile.uasset OutFile.json");
+                Console.WriteLine("JSON to BAC/BCM/BCH: MoveTool.exe InFile.json OutFile.uasset");
                 Console.WriteLine("\n");
-                Console.WriteLine("You can also drag and drop files onto this tool and it will\nautomatically create the JSON or BAC/BCM file with the same\nname in the same directory as the original file.");
+                Console.WriteLine("You can also drag and drop files onto this tool and it will\nautomatically create the JSON or BAC/BCM/BCH file with the same\nname in the same directory as the original file.");
                 Console.WriteLine("\n");
                 Console.WriteLine(("Back up your files, this tool will overwrite any file with the\nsame name as the output file!").ToUpper());
             }
@@ -65,6 +65,23 @@ namespace MoveTool
                             }
 
                         }
+                        else if (type == FileType.BCH)
+                        {
+                            try
+                            {
+                                Console.WriteLine("BCH file detected. Trying to do BCH to JSON.");
+                                BCH.BchToJson(args[0],
+                                    Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) +
+                                    ".json");
+                                Console.WriteLine("Done writing file: " + Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) + ".json");
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine("Something went wrong: " + ex.Message + " - " + ex.Data);
+                                Console.Read();
+                            }
+
+                        }
                         else if (type == FileType.Unknown)
                         {
                             Console.WriteLine("Unsupported format.");
@@ -82,6 +99,12 @@ namespace MoveTool
                         if (!success)
                         {
                             success = BCM.JsonToBcm(args[0],
+                            Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) + ".uasset");
+                        }
+
+                        if (!success)
+                        {
+                            success = BCH.JsonToBch(args[0],
                             Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) + ".uasset");
                         }
 
@@ -129,6 +152,12 @@ namespace MoveTool
                         BCM.BcmToJson(inFile,outFile);
                         Console.WriteLine("Done writing file: " + outFile);
                     }
+                    else if (type == FileType.BCH)
+                    {
+                        Console.WriteLine("BCH file detected. Trying to do BCH to JSON.");
+                        BCH.BchToJson(inFile, outFile);
+                        Console.WriteLine("Done writing file: " + outFile);
+                    }
                     else if (type == FileType.Unknown)
                     {
                         Console.WriteLine("Unsupported format.");
@@ -150,6 +179,11 @@ namespace MoveTool
                     if (!success)
                     {
                         success = BCM.JsonToBcm(inFile, outFile);
+                    }
+
+                    if (!success)
+                    {
+                        success = BCH.JsonToBch(inFile, outFile);
                     }
 
                     if (!success)

@@ -33,6 +33,11 @@ namespace MoveLib
                             return FileType.BCM;
                         }
 
+                        if (fileType == "#BCH")
+                        {
+                            return FileType.BCH;
+                        }
+
                         return FileType.Unknown;
                     }
                 }
@@ -50,5 +55,6 @@ namespace MoveLib
         Unknown = 0,
         BCM = 1,
         BAC = 2,
+        BCH = 3
     }
 }

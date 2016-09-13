@@ -287,7 +287,7 @@ namespace MoveLib.BCM
                         Unknown24 = inFile.ReadInt32(),
                         Unknown25 = inFile.ReadInt32(),
                         Unknown26 = inFile.ReadInt16(),
-                        Unknown27 = inFile.ReadInt16(),
+                        NormalOrVtrigger = inFile.ReadInt16(),
                         Unknown28 = inFile.ReadInt32()
                     };
 
@@ -331,7 +331,7 @@ namespace MoveLib.BCM
                                     + "\nUnknown24: " + thisMove.Unknown24
                                     + "\nUnknown25: " + thisMove.Unknown25
                                     + "\nUnknown26: " + thisMove.Unknown26
-                                    + "\nUnknown27: " + thisMove.Unknown27
+                                    + "\nUnknown27: " + thisMove.NormalOrVtrigger
                                     + "\nUnknown28: " + thisMove.Unknown28
                                     + "\n\n");
                 }
@@ -717,7 +717,7 @@ namespace MoveLib.BCM
                         outFile.Write(file.Moves[i].Unknown24);
                         outFile.Write(file.Moves[i].Unknown25);
                         outFile.Write(file.Moves[i].Unknown26);
-                        outFile.Write(file.Moves[i].Unknown27);
+                        outFile.Write(file.Moves[i].NormalOrVtrigger);
                         outFile.Write(file.Moves[i].Unknown28);
                     }
 
@@ -985,7 +985,7 @@ namespace MoveLib.BCM
         public int Unknown25 { get; set; }
 
         public short Unknown26 { get; set; }
-        public short Unknown27 { get; set; }
+        public short NormalOrVtrigger { get; set; }
 
         public int Unknown28 { get; set; }
     }

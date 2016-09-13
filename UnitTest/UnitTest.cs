@@ -2,8 +2,10 @@
 using System.Diagnostics;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using MoveLib;
 using MoveLib.BAC;
 using MoveLib.BCM;
+
 
 
 namespace UnitTest
@@ -13,7 +15,7 @@ namespace UnitTest
     {
         /*
         To use these tests you will need to put some, or all, the 
-        BAC/BCM (uasset) files in the correct folder (UnitTest/Bin/Debug/Originals/...)
+        BAC/BCM/BCH (uasset) files in the correct folder (UnitTest/Bin/Debug/Originals/...)
         */
 
         [TestMethod]
@@ -115,6 +117,27 @@ namespace UnitTest
             }
 
             File.Delete(@"Originals\BCM\testfile.uasset");
+        }
+
+        [TestMethod]
+        public void TestBCH()
+        {
+            foreach (var file in Directory.GetFiles(@"Originals\BCH"))
+            {
+                var originalBytes = File.ReadAllBytes(file);
+                var bch = BCH.FromUassetFile(file);
+                BCH.ToUassetFile(bch, @"Originals\BCH\testfile.uasset");
+                var createdBytes = File.ReadAllBytes(@"Originals\BCH\testfile.uasset");
+
+                Assert.AreEqual(originalBytes.Length, createdBytes.Length);
+
+                for (int i = 0; i < originalBytes.Length; i++)
+                {
+                    Assert.AreEqual(originalBytes[i], createdBytes[i]);
+                }
+            }
+
+            File.Delete(@"Originals\BCH\testfile.uasset");
         }
     }
 }
