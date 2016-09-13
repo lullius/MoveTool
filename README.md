@@ -1,5 +1,5 @@
 # MoveTool
-A tool that outputs JSON files from Street Fighter 5's BCM and BAC (uasset) files and rebuilds those files from JSON.
+A tool that outputs JSON files from Street Fighter 5's BCM, BAC and BCH (uasset) files and rebuilds those files from JSON.
 
 ## How to use
 Drag Uasset or JSON files on top of MoveTool.exe
@@ -21,67 +21,42 @@ Looking over the source helped me understand the old format, and the new one is 
 I don't know everyone involved in that project or what they each did so I'll list the ones mentioned in the tool's About page in alphabetical order:
 
 ACCELERATOR
-
-Anotak
-
-Banana Ken
-
-Bebopfan
-
-Comeback Mechanic
-
-Dandy J
-
-Dantarion
-
-Error1
-
-Eternal
-
-Gojira
-
-Illitirit
-
-Mnszyk
-
-Piecemontee
-
-Polarity
-
-Providenceangle
-
-SSJ George Bush
-
-Sindor
-
-Waterine
-
-Zeipher
-
 ahfb
-
+Anotak
+Banana Ken
+Bebopfan
 combovid.com
-
+Comeback Mechanic
+Dandy J
+Dantarion
+Error1
+Eternal
+Gojira
 hunterk
-
+Illitirit
+Mnszyk
+Piecemontee
+Polarity
+Providenceangle
 razer5070
-
+Sindor
 sonichurricane.com
+SSJ George Bush
+Waterine
 yeb
-
 Zandwich
-
+Zeipher
 zentax.com
 
 I hope I got everyone and that I wrote your names correctly.
 
 Dantarion's boxdox was also really helpful!
-
 http://watissf.dantarion.com/sf5/boxdox3/
-
 And the JSON
-
 http://watissf.dantarion.com/sf5/out/json/
+
+I would also like to thank Killbox and Venom44 for helping me find a lot of unknowns. Check out their mod (WIP) here:
+http://steamcommunity.com/groups/SFVJUGGLEMOD
 
 ### Other stuff
 This tool uses Json.NET from Newtonsoft which uses an MIT license:
