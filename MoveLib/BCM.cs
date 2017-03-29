@@ -83,8 +83,9 @@ namespace MoveLib.BCM
 
                 Debug.WriteLine(bcmString);
 
-                inFile.BaseStream.Seek(0xC, SeekOrigin.Begin);
-
+                inFile.BaseStream.Seek(0xA, SeekOrigin.Begin);
+                short BCMVER = inFile.ReadInt16();
+                Debug.WriteLine("BCMVER: " + BCMVER);
                 short ChargeCount = inFile.ReadInt16();
                 Debug.WriteLine("ChargeCount: " + ChargeCount);
                 short InputCount = inFile.ReadInt16();
@@ -238,6 +239,7 @@ namespace MoveLib.BCM
                     int restrict = inFile.ReadInt32();
                     int restrict2 = inFile.ReadInt32();
                     float restrictDistance = inFile.ReadSingle();
+                    int unknown4 = (BCMVER > 0) ? inFile.ReadInt32() : 0;
                     int projectileRestrict = inFile.ReadInt32();
                     int unknown6 = inFile.ReadInt16();
                     int unknown7 = inFile.ReadInt16();
@@ -263,6 +265,7 @@ namespace MoveLib.BCM
                         PositionRestriction = restrict,
                         Unknown3 = restrict2,
                         RestrictionDistance = restrictDistance,
+                        Unknown4 = unknown4,
                         ProjectileLimit = projectileRestrict,
                         Unknown6 = (short)unknown6,
                         Unknown7 = (short)unknown7,
@@ -279,7 +282,7 @@ namespace MoveLib.BCM
                         ScriptIndex = (short)ScriptIndex,
                         Unknown17 = inFile.ReadInt32(),
                         Unknown18 = inFile.ReadInt32(),
-                        Unknown19 = inFile.ReadInt32(),
+                        Unknown19 = (BCMVER == 0) ? inFile.ReadInt32() : 0,
                         Unknown20 = inFile.ReadSingle(),
                         Unknown21 = inFile.ReadSingle(),
                         Unknown22 = inFile.ReadInt32(),
@@ -307,6 +310,7 @@ namespace MoveLib.BCM
                                     + "\nRestrict: " + restrict
                                     + "\nRestrict2: " + restrict2
                                     + "\nRestrictDistance: " + restrictDistance
+                                    + "\nUnknown4: " + unknown4
                                     + "\nProjectileRestrict: " + projectileRestrict
                                     + "\nUnknown6: " + unknown6
                                     + "\nUnknown7: " + unknown7
@@ -958,6 +962,7 @@ namespace MoveLib.BCM
         public int PositionRestriction { get; set; }
         public int Unknown3 { get; set; }
         public float RestrictionDistance { get; set; }
+        public int Unknown4 { get; set; }
         public int ProjectileLimit { get; set; }
         public short Unknown6 { get; set; }
         public short Unknown7 { get; set; }
