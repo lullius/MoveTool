@@ -90,6 +90,10 @@ I would also like to thank Killbox and Venom44 for helping me find a lot of unkn
 
 http://steamcommunity.com/groups/SFVJUGGLEMOD
 
+https://discord.gg/g77WMvu
+
+Thank you TOOLASSISTED and WydD for submitting code and finding out how all the new stuff works.
+
 ### Other stuff
 This tool uses Json.NET from Newtonsoft which uses an MIT license:
 
