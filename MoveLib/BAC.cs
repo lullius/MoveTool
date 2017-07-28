@@ -79,7 +79,9 @@ namespace MoveLib.BAC
 
                 Debug.WriteLine(bacString);
 
-                inFile.BaseStream.Seek(0xC, SeekOrigin.Begin);
+                inFile.BaseStream.Seek(0xA, SeekOrigin.Begin);
+                short BACVER = inFile.ReadInt16();
+                Debug.WriteLine("BACVER: " + BACVER);
 
                 short MoveListCount = inFile.ReadInt16(); //MoveList has a similar structure to a BCM or BAC file in itself, but uses offsets from the start of the table instead of from the beginning of the file
                 Debug.WriteLine("MoveListCount: " + MoveListCount);
@@ -256,13 +258,14 @@ namespace MoveLib.BAC
 
                         for (int k = 0; k < thisMove.numberOfTypes; k++)
                         {
-                            long thisTypeOffset = typeListBaseOffset + (12*k);
+                            long thisTypeOffset = typeListBaseOffset + ((BACVER == 1 ? 16 : 12) *k);
                             inFile.BaseStream.Seek(thisTypeOffset, SeekOrigin.Begin);
                             short type = inFile.ReadInt16();
                             short count = inFile.ReadInt16();
 
                             int tickOffset = inFile.ReadInt32();
                             int dataOffset = inFile.ReadInt32();
+                            // Unknown 4 bytes here in BACVER
 
                             long tickAddress = tickOffset + thisTypeOffset;
                             long dataAddress = dataOffset + thisTypeOffset;
@@ -294,7 +297,7 @@ namespace MoveLib.BAC
                                             thisMove.AutoCancels = new AutoCancel[count];
                                         }
 
-                                        long thisType0Address = dataAddress + (l*16);
+                                        long thisType0Address = dataAddress + (l * (16 + (BACVER == 1 ? 8 : 0)));
                                         inFile.BaseStream.Seek(thisType0Address, SeekOrigin.Begin);
 
                                         AutoCancel thisType0 = new AutoCancel();
@@ -305,6 +308,8 @@ namespace MoveLib.BAC
                                         thisType0.Unknown1 = inFile.ReadInt16();
                                         thisType0.NumberOfInts = inFile.ReadInt16();
                                         thisType0.Unknown2 = inFile.ReadInt32();
+                                        thisType0.Unknown3 = BACVER == 1 ? inFile.ReadInt32() : 0;
+                                        thisType0.Unknown4 = BACVER == 1 ? inFile.ReadInt32() : 0;
                                         thisType0.Offset = inFile.ReadInt32();
                                         thisType0.Ints = new int[thisType0.NumberOfInts];
 
@@ -483,9 +488,10 @@ namespace MoveLib.BAC
                                         thisHitbox.HitboxEffectIndex = inFile.ReadInt16();
                                         thisHitbox.Unknown10 = inFile.ReadInt16();
                                         thisHitbox.Unknown11 = inFile.ReadInt32();
+                                        thisHitbox.Unknown12 = BACVER == 1 ? inFile.ReadInt32() : 0;
 
-                                        Debug.WriteLine(
-                                            "thisHitbox - Tickstart: {0}, TickEnd: {1}, X: {2}, Y: {3}, Rot: {4}, Width: {5}, Height: {6}, U1: {7}, U2: {8}, U3: {9}, U4: {10}, U5: {11}, U6: {12}, U7: {13}, U8: {14}, U9: {15}, Flag1: {16}, Flag2: {17}, Flag3: {18}, Flag4: {19}, HitEffect: {20}, U10: {21}, U11: {22}",
+                                            Debug.WriteLine(
+                                            "thisHitbox - Tickstart: {0}, TickEnd: {1}, X: {2}, Y: {3}, Rot: {4}, Width: {5}, Height: {6}, U1: {7}, U2: {8}, U3: {9}, U4: {10}, U5: {11}, U6: {12}, U7: {13}, U8: {14}, U9: {15}, Flag1: {16}, Flag2: {17}, Flag3: {18}, Flag4: {19}, HitEffect: {20}, U10: {21}, U11: {22}, U12: {23}",
                                             thisHitbox.TickStart, thisHitbox.TickEnd, thisHitbox.X, thisHitbox.Y,
                                             thisHitbox.Z, thisHitbox.Width, thisHitbox.Height,
                                             thisHitbox.Unknown1, thisHitbox.Unknown2, thisHitbox.Unknown3,
@@ -493,7 +499,7 @@ namespace MoveLib.BAC
                                             thisHitbox.Unknown7,
                                             thisHitbox.Unknown8, thisHitbox.NumberOfHits, thisHitbox.HitType,
                                             thisHitbox.JuggleLimit, thisHitbox.JuggleIncrease, thisHitbox.Flag4, thisHitbox.HitboxEffectIndex,
-                                            thisHitbox.Unknown10, thisHitbox.Unknown11);
+                                            thisHitbox.Unknown10, thisHitbox.Unknown11, thisHitbox.Unknown12);
 
                                         thisMove.Hitboxes[l] = thisHitbox;
 
@@ -538,9 +544,10 @@ namespace MoveLib.BAC
                                         thisHurtbox.Unknown11 = inFile.ReadInt32();
 
                                         thisHurtbox.Unknown12 = inFile.ReadSingle();
+                                        thisHurtbox.Unknown13 = BACVER == 1 ? inFile.ReadInt32() : 0;
 
-                                        Debug.WriteLine(
-                                            "thisHurtbox - Tickstart: {0}, TickEnd: {1}, X: {2}, Y: {3}, Rot: {4}, Width: {5}, Height: {6}, U1: {7}, U2: {8}, U3: {9}, U4: {10}, U5: {11}, U6: {12}, U7: {13}, U8: {14}, U9: {15}, Flag1: {16}, Flag2: {17}, Flag3: {18}, Flag4: {19}, HitEffect: {20}, U10: {21}, U11: {22}, U12: {23}",
+                                            Debug.WriteLine(
+                                            "thisHurtbox - Tickstart: {0}, TickEnd: {1}, X: {2}, Y: {3}, Rot: {4}, Width: {5}, Height: {6}, U1: {7}, U2: {8}, U3: {9}, U4: {10}, U5: {11}, U6: {12}, U7: {13}, U8: {14}, U9: {15}, Flag1: {16}, Flag2: {17}, Flag3: {18}, Flag4: {19}, HitEffect: {20}, U10: {21}, U11: {22}, U12: {23}, U13: {24}",
                                             thisHurtbox.TickStart, thisHurtbox.TickEnd, thisHurtbox.X, thisHurtbox.Y,
                                             thisHurtbox.Z, thisHurtbox.Width, thisHurtbox.Height,
                                             thisHurtbox.Unknown1, thisHurtbox.Unknown2, thisHurtbox.Unknown3,
@@ -549,7 +556,7 @@ namespace MoveLib.BAC
                                             thisHurtbox.Unknown8, thisHurtbox.Unknown9, thisHurtbox.Flag1,
                                             thisHurtbox.Flag2, thisHurtbox.Flag3, thisHurtbox.Flag4,
                                             thisHurtbox.HitEffect, thisHurtbox.Unknown10, thisHurtbox.Unknown11,
-                                            thisHurtbox.Unknown12);
+                                            thisHurtbox.Unknown12, thisHurtbox.Unknown13);
 
                                         thisMove.Hurtboxes[l] = thisHurtbox;
 
@@ -2006,6 +2013,8 @@ namespace MoveLib.BAC
         public short Unknown1 { get; set; }
         public short NumberOfInts { get; set; }
         public int Unknown2 { get; set; }
+        public int Unknown3 { get; set; }
+        public int Unknown4 { get; set; }
         public int Offset { get; set; }
 
         public int[] Ints { get; set; }
@@ -2093,6 +2102,7 @@ namespace MoveLib.BAC
         public short HitboxEffectIndex { get; set; }
         public short Unknown10 { get; set; }
         public int Unknown11 { get; set; }
+        public int Unknown12 { get; set; }
     }
 
     public class Hurtbox
@@ -2128,6 +2138,7 @@ namespace MoveLib.BAC
         public int Unknown11 { get; set; }
 
         public float Unknown12 { get; set; }
+        public int Unknown13 { get; set; }
     }
 
     public class PhysicsBox
