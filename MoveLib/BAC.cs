@@ -297,7 +297,7 @@ namespace MoveLib.BAC
                                             thisMove.AutoCancels = new AutoCancel[count];
                                         }
 
-                                        long thisType0Address = dataAddress + (l*16);
+                                        long thisType0Address = dataAddress + (l * (16 + (BACVER == 1 ? 8 : 0)));
                                         inFile.BaseStream.Seek(thisType0Address, SeekOrigin.Begin);
 
                                         AutoCancel thisType0 = new AutoCancel();
@@ -308,6 +308,8 @@ namespace MoveLib.BAC
                                         thisType0.Unknown1 = inFile.ReadInt16();
                                         thisType0.NumberOfInts = inFile.ReadInt16();
                                         thisType0.Unknown2 = inFile.ReadInt32();
+                                        thisType0.Unknown3 = BACVER == 1 ? inFile.ReadInt32() : 0;
+                                        thisType0.Unknown4 = BACVER == 1 ? inFile.ReadInt32() : 0;
                                         thisType0.Offset = inFile.ReadInt32();
                                         thisType0.Ints = new int[thisType0.NumberOfInts];
 
@@ -2011,6 +2013,8 @@ namespace MoveLib.BAC
         public short Unknown1 { get; set; }
         public short NumberOfInts { get; set; }
         public int Unknown2 { get; set; }
+        public int Unknown3 { get; set; }
+        public int Unknown4 { get; set; }
         public int Offset { get; set; }
 
         public int[] Ints { get; set; }
