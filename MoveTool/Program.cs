@@ -1,140 +1,169 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 using MoveLib;
 using MoveLib.BAC;
 using MoveLib.BCM;
 
 namespace MoveTool
 {
-    class Program
+    public class Program
     {
-        private const string SEPARATOR = "----------------------------";
+        private static readonly char Separator = Path.DirectorySeparatorChar;
 
-        static void Main(string[] args)
+        [STAThread]
+        public static void Main(string[] args)
+        {
+            AppDomain.CurrentDomain.AssemblyResolve += OnResolveAssembly;
+
+            Start(args);
+        }
+
+        private static void Start(string[] args)
         {
             switch (args.Length)
             {
                 case 0:
-                    Console.WriteLine("Usage:\n");
-                    Console.WriteLine("BAC/BCM/BCH to JSON: MoveTool.exe InFile.uasset OutFile.json");
-                    Console.WriteLine("JSON to BAC/BCM/BCH: MoveTool.exe InFile.json OutFile.uasset");
-                    Console.WriteLine("\n");
-                    Console.WriteLine("You can also drag and drop files onto this tool and it will" + 
-                                      "\nautomatically create the JSON or BAC/BCM/BCH file with the same" + 
-                                      "\nname in the same directory as the original file.");
-                    Console.WriteLine("\n");
-                    Console.WriteLine(("Back up your files, this tool will overwrite any file with the\nsame name as the output file!").ToUpper());
-                    Pause();
+                {
+                    Console.WriteLine("\nBAC/BCM/BCH to JSON: MoveTool.exe InFile.uasset OutFile.json"      + 
+                                      "\nJSON to BAC/BCM/BCH: MoveTool.exe InFile.json OutFile.uasset"      + 
+                                      "\n\nYou can also drag and drop files onto this tool and it will"     + 
+                                      "\nautomatically create the JSON or BAC/BCM/BCH file with the "       +
+                                      "\nsame name in the same directory as the original file."             + 
+                                      ("\n\nBack up your files, this tool will overwrite any file with the" + 
+                                      "\nsame name as the output file!").ToUpper()                          );
+
                     break;
+                }
+
                 case 1:
-                    Console.WriteLine(Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]));
+                {
+                    var path = args[0];
+                    var directory = Path.GetDirectoryName(path) + Separator;
+                    var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(path);
+                    
+                    Console.WriteLine(directory + fileNameWithoutExtension);
 
-                    if (File.Exists(args[0]))
+                    // Check if file exists
+                    if (!File.Exists(path))
                     {
-                        if (args[0].ToLower().EndsWith("uasset"))
-                        {
-                            var type = FileTypeDecider.Decide(args[0]);
+                        Console.WriteLine("File does not exist: " + path);
+                        break;
+                    }
 
-                            if (type == FileType.BAC)
-                            {
+                    #region Handle .UASSET files
+
+                    if (path.ToLower().EndsWith("uasset"))
+                    {
+                        var type = FileTypeDecider.Decide(path);
+
+                        switch (type)
+                        {
+                            case FileType.BAC:
                                 Console.WriteLine("BAC file detected. Trying to do BAC to JSON.");
                                 try
                                 {
-                                    BAC.BacToJson(args[0],
-                                        Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) +
-                                        ".json");
-                                    Console.WriteLine("Done writing file: " + Path.GetDirectoryName(args[0]) + @"\" +
-                                                      Path.GetFileNameWithoutExtension(args[0]) + ".json");
+                                    BAC.BacToJson(path, directory + fileNameWithoutExtension + ".json");
+
+                                    Console.WriteLine("Done writing file: " + 
+                                                      directory + fileNameWithoutExtension + ".json");
                                 }
                                 catch (Exception ex)
                                 {
                                     Console.WriteLine("Something went wrong: " + ex.Message + " - " + ex.Data);
-                                    Pause();
                                 }
-                            }
-                            else if (type == FileType.BCM)
-                            {
+
+                                break;
+
+                            case FileType.BCM:
                                 try
                                 {
                                     Console.WriteLine("BCM file detected. Trying to do BCM to JSON.");
-                                    BCM.BcmToJson(args[0],
-                                        Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) +
-                                        ".json");
-                                    Console.WriteLine("Done writing file: " + Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) + ".json");
+
+                                    BCM.BcmToJson(path,
+                                        directory + fileNameWithoutExtension + ".json");
+
+                                    Console.WriteLine("Done writing file: " + 
+                                                      directory + fileNameWithoutExtension + ".json");
                                 }
                                 catch (Exception ex)
                                 {
                                     Console.WriteLine("Something went wrong: " + ex.Message + " - " + ex.Data);
-                                    Pause();
                                 }
 
-                            }
-                            else if (type == FileType.BCH)
-                            {
+                                break;
+
+                            case FileType.BCH:
                                 try
                                 {
                                     Console.WriteLine("BCH file detected. Trying to do BCH to JSON.");
-                                    BCH.BchToJson(args[0],
-                                        Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) +
-                                        ".json");
-                                    Console.WriteLine("Done writing file: " + Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) + ".json");
+                                    BCH.BchToJson(path, 
+                                        directory + fileNameWithoutExtension + ".json");
+                                    Console.WriteLine("Done writing file: " + 
+                                                      directory + fileNameWithoutExtension + ".json");
                                 }
                                 catch (Exception ex)
                                 {
                                     Console.WriteLine("Something went wrong: " + ex.Message + " - " + ex.Data);
-                                    Pause();
                                 }
 
-                            }
-                            else if (type == FileType.Unknown)
-                            {
+                                break;
+
+                            case FileType.Unknown:
+                            default:
                                 Console.WriteLine("Unsupported format.");
-                                Pause();
-                            }
-                        }
-
-                        if (args[0].ToLower().EndsWith("json"))
-                        {
-                            Console.WriteLine("File is json.");
-
-                            // Try to convert JSON --> BAC.
-                            var success = BAC.JsonToBac(args[0],
-                                Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) + ".uasset");
-
-                            if (!success)
-                            {
-                                success = BCM.JsonToBcm(args[0],
-                                    Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) + ".uasset");
-                            }
-
-                            if (!success)
-                            {
-                                success = BCH.JsonToBch(args[0],
-                                    Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) + ".uasset");
-                            }
-
-                            if (!success)
-                            {
-                                Console.WriteLine("Something went wrong while parsing json.");
-                                Pause();
-                            }
-                            else
-                            {
-                                Console.WriteLine("Done writing file: " + Path.GetDirectoryName(args[0]) + @"\" + Path.GetFileNameWithoutExtension(args[0]) + ".uasset");
-                                Pause();
-                            }
+                                break;
                         }
                     }
-                    else
+
+                    #endregion
+
+                    #region Handle .JSON files
+
+                    if (args[0].ToLower().EndsWith("json"))
                     {
-                        Console.WriteLine("File does not exist: " + args[0]);
-                        Pause();
+                        Console.WriteLine("File is json.");
+
+                        var success = BAC.JsonToBac(
+                            args[0],
+                            Path.GetDirectoryName(args[0]) + Separator +
+                            Path.GetFileNameWithoutExtension(args[0]) + ".uasset");
+
+                        if (!success)
+                        {
+                            success = BCM.JsonToBcm(args[0],
+                                Path.GetDirectoryName(args[0]) + Separator +
+                                Path.GetFileNameWithoutExtension(args[0]) + ".uasset");
+                        }
+
+                        if (!success)
+                        {
+                            success = BCH.JsonToBch(args[0],
+                                Path.GetDirectoryName(args[0]) + Separator +
+                                Path.GetFileNameWithoutExtension(args[0]) + ".uasset");
+                        }
+
+                        if (!success)
+                        {
+                            Console.WriteLine("Something went wrong while parsing json.");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Done writing file: " + Path.GetDirectoryName(args[0]) +
+                                              Separator + Path.GetFileNameWithoutExtension(args[0]) +
+                                              ".uasset");
+                        }
                     }
+
+                    #endregion
 
                     break;
+                }
+
                 case 2:
-                    string inFile = args[0];
-                    string outFile = args[1];
+                {
+                    var inFile = args[0];
+                    var outFile = args[1];
 
                     if (inFile.ToLower().EndsWith("uasset"))
                     {
@@ -145,32 +174,33 @@ namespace MoveTool
 
                         var type = FileTypeDecider.Decide(inFile);
 
-                        if (type == FileType.BAC)
+                        switch (type)
                         {
-                            Console.WriteLine("BAC file detected. Trying to do BAC to JSON.");
-                            BAC.BacToJson(inFile, outFile);
-                            Console.WriteLine("Done writing file: " + outFile);
-                        }
-                        else if (type == FileType.BCM)
-                        {
-                            Console.WriteLine("BCM file detected. Trying to do BCM to JSON.");
-                            BCM.BcmToJson(inFile,outFile);
-                            Console.WriteLine("Done writing file: " + outFile);
-                        }
-                        else if (type == FileType.BCH)
-                        {
-                            Console.WriteLine("BCH file detected. Trying to do BCH to JSON.");
-                            BCH.BchToJson(inFile, outFile);
-                            Console.WriteLine("Done writing file: " + outFile);
-                        }
-                        else if (type == FileType.Unknown)
-                        {
-                            Console.WriteLine("Unsupported format.");
-                            Pause();
+                            case FileType.BAC:
+                                Console.WriteLine("BAC file detected. Trying to do BAC to JSON.");
+                                BAC.BacToJson(inFile, outFile);
+                                Console.WriteLine("Done writing file: " + outFile);
+                                break;
+
+                            case FileType.BCM:
+                                Console.WriteLine("BCM file detected. Trying to do BCM to JSON.");
+                                BCM.BcmToJson(inFile, outFile);
+                                Console.WriteLine("Done writing file: " + outFile);
+                                break;
+
+                            case FileType.BCH:
+                                Console.WriteLine("BCH file detected. Trying to do BCH to JSON.");
+                                BCH.BchToJson(inFile, outFile);
+                                Console.WriteLine("Done writing file: " + outFile);
+                                break;
+
+                            case FileType.Unknown:
+                            default:
+                                Console.WriteLine("Unsupported format.");
+                                break;
                         }
                     }
-
-                    if (inFile.ToLower().EndsWith("json"))
+                    else if (inFile.ToLower().EndsWith("json"))
                     {
                         if (!outFile.ToLower().EndsWith("uasset"))
                         {
@@ -192,30 +222,53 @@ namespace MoveTool
                         }
 
                         if (!success)
-                        {
                             Console.WriteLine("Something went wrong while parsing json.");
-                            Pause();
-                        }
                         else
-                        {
                             Console.WriteLine("Done writing file: " + outFile);
-                        }
                     }
 
                     break;
+                }
+
+                default:
+                {
+                    Console.WriteLine("MoveTool can not understand more than 2 arguments. \n" +
+                                      @"If the paths contain spaces, try wrapping the paths in double quotes ("").");
+                    break;
+                }
             }
 
-            if (args.Length > 2)
-            {
-                Console.WriteLine("MoveTool can not understand more than 2 arguments. If you have spaces\n" +  @"in the paths, try adding "" around the paths.");
-            }
+            Pause();
         }
 
         private static void Pause()
         {
-            Console.Write($"\n\n{SEPARATOR}\nPress any key to continue...\n{SEPARATOR}\n");
+            Console.Write("\n\nPress any key to continue...");
             Console.ReadKey(true);
+            Console.WriteLine("\n");
         }
 
+        // Part of enabling a single .exe file
+        private static Assembly OnResolveAssembly(object sender, ResolveEventArgs args)
+        {
+            var executingAssembly = Assembly.GetExecutingAssembly();
+            var assemblyName = new AssemblyName(args.Name);
+
+            var path = assemblyName.Name + ".dll";
+            if (assemblyName.CultureInfo.Equals(System.Globalization.CultureInfo.InvariantCulture) == false)
+            {
+                path = $@"{assemblyName.CultureInfo}\{path}";
+            }
+
+            using (var stream = executingAssembly.GetManifestResourceStream(path))
+            {
+                if (stream == null)
+                    return null;
+
+                var assemblyRawBytes = new byte[stream.Length];
+                stream.Read(assemblyRawBytes, 0, assemblyRawBytes.Length);
+                return Assembly.Load(assemblyRawBytes);
+            }
+        }
     }
 }
