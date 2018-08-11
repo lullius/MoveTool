@@ -217,12 +217,12 @@ namespace MoveLib.BAC
                             TotalTicks = inFile.ReadInt32(),
                         
                             ReturnToOriginalPosition = inFile.ReadInt32(),
-                            Slide = inFile.ReadSingle(),
-                            unk3 = inFile.ReadSingle(),
-                            unk4 = inFile.ReadSingle(),
-                            unk5 = inFile.ReadSingle(),
-                            unk6 = inFile.ReadSingle(),
-                            unk7 = inFile.ReadSingle(),
+                            XSpeedMultiplier = inFile.ReadSingle(),
+                            YSpeedMultiplier = inFile.ReadSingle(),
+                            ZSpeedMultiplier = inFile.ReadSingle(),
+                            XAcceleration = inFile.ReadSingle(),
+                            YAcceleration = inFile.ReadSingle(),
+                            ZAcceleration = inFile.ReadSingle(),
                             Flag = inFile.ReadInt32(),
                             unk9 = inFile.ReadInt32(),
 
@@ -1347,12 +1347,12 @@ namespace MoveLib.BAC
                         outFile.Write(move.InterruptFrame);
                         outFile.Write(move.TotalTicks);
                         outFile.Write(move.ReturnToOriginalPosition);
-                        outFile.Write(move.Slide);
-                        outFile.Write(move.unk3);
-                        outFile.Write(move.unk4);
-                        outFile.Write(move.unk5);
-                        outFile.Write(move.unk6);
-                        outFile.Write(move.unk7);
+                        outFile.Write(move.XSpeedMultiplier);
+                        outFile.Write(move.YSpeedMultiplier);
+                        outFile.Write(move.ZSpeedMultiplier);
+                        outFile.Write(move.XAcceleration);
+                        outFile.Write(move.YAcceleration);
+                        outFile.Write(move.ZAcceleration);
                         outFile.Write(move.Flag);
                         outFile.Write(move.unk9);
 
@@ -2478,12 +2478,24 @@ namespace MoveLib.BAC
         public int TotalTicks { get; set; }
 
         public int ReturnToOriginalPosition { get; set; }
-        public float Slide { get; set; }
-        public float unk3 { get; set; }
-        public float unk4 { get; set; }
-        public float unk5 { get; set; }
-        public float unk6 { get; set; }
-        public float unk7 { get; set; }
+
+        public float XSpeedMultiplier { get; set; }
+        private float Slide { set => XSpeedMultiplier = value; }
+
+        public float YSpeedMultiplier { get; set; }
+        private float unk3 { set => YSpeedMultiplier = value; }
+
+        public float ZSpeedMultiplier { get; set; }
+        private float unk4 { set => ZSpeedMultiplier = value; }
+
+        public float XAcceleration { get; set; }
+        public float YAcceleration { get; set; }
+        public float ZAcceleration { get; set; }
+
+        private float unk5 { set => XAcceleration = value; }
+        private float unk6 { set => YAcceleration = value; }
+        private float unk7 { set => ZAcceleration = value; }
+
         public int Flag { get; set; }
         public int unk9 { get; set; }
 
