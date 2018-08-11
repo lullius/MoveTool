@@ -59,7 +59,7 @@
             this.bScan.TabIndex = 3;
             this.bScan.Text = "Scan";
             this.bScan.UseVisualStyleBackColor = true;
-            this.bScan.Click += new System.EventHandler(this.bTest_Click);
+            this.bScan.Click += new System.EventHandler(this.OnClick_ScanButton);
             // 
             // cbBAC
             // 

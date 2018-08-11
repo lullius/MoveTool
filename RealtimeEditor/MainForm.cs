@@ -14,8 +14,10 @@ namespace RealtimeEditor
 {
     public partial class MainForm : Form
     {
+        // Create a list of BAC and BCM addresses
         List<long> BACAddresses = new List<long>();
         List<long> BCMAddresses = new List<long>();
+
         List<MemoryFile> MemoryFileList = new List<MemoryFile>();
         Dictionary<string, FileSystemWatcher> fileSystemWatchers = new Dictionary<string, FileSystemWatcher>(); 
         private Memory _memory = new Memory();
@@ -28,7 +30,7 @@ namespace RealtimeEditor
                     var success = _memory.OpenProcess("StreetFighterV");
                     if (!success)
                     {
-                        writeToOutput("Game process not found!");
+                        WriteToOutput("Game process not found! (Did you run Street Fighter V?)");
                         return null;
                     }
                 }
@@ -41,7 +43,7 @@ namespace RealtimeEditor
             InitializeComponent();
         }
 
-        private void writeToOutput(string output)
+        private void WriteToOutput(string output)
         {
             Invoke((MethodInvoker)delegate
             {
@@ -50,13 +52,14 @@ namespace RealtimeEditor
             });
         }
 
-        private void bTest_Click(object sender, EventArgs e)
+        private void OnClick_ScanButton(object sender, EventArgs e)
         {
+            // Reset combo boxes and file list.
             cbBAC.Items.Clear();
             cbBCM.Items.Clear();
             MemoryFileList = new List<MemoryFile>();
 
-            writeToOutput("Scanning game for BAC/BCM files...");
+            WriteToOutput("Scanning game for BAC/BCM files...");
             Application.DoEvents();
 
             BACAddresses = Memory.MemoryScan(Encoding.UTF8.GetBytes("#BAC"));
@@ -71,6 +74,15 @@ namespace RealtimeEditor
             {
                 Console.WriteLine("BCM at: " + bcmAddress.ToString("X"));
             }
+
+            //CHANGED: Checks if Originals exists, and creates it if not. If it does exist, checks for empty folder.
+            if (!Directory.Exists("Originals")) Directory.CreateDirectory("Originals");
+            if (!Directory.EnumerateFiles("Originals").Any())
+            {
+                WriteToOutput("No files in Originals folder. Please add the uasset files for the current character to the \"Originals\" folder.");
+                return;
+            }
+            // ---
 
             foreach (var file in Directory.GetFiles("Originals"))
             {
@@ -125,10 +137,13 @@ namespace RealtimeEditor
                 }
             }
 
+            // Searches for BAC Memory Addresses. If the memory addresses don't match, labels them Unknown.
             int counter = 0;
             foreach (var bacAddress in BACAddresses)
             {
                 counter++;
+                // If a [MemoryFile whose Original Address matches the currently checked BAC Address] doesn't exist in the MemoryFile list...
+                // i.e. - If the currently checked BAC Address does not match any Original Address from the MemoryFiles...
                 if (!MemoryFileList.Exists(m => m.OriginalAddress == bacAddress))
                 {
                     MemoryFileList.Add(new MemoryFile()
@@ -142,6 +157,7 @@ namespace RealtimeEditor
 
             counter = 0;
 
+            // Searches for BCM Memory Addresses. If the memory addresses don't match, labels them Unknown.
             foreach (var bcmAddress in BCMAddresses)
             {
                 counter++;
@@ -176,7 +192,7 @@ namespace RealtimeEditor
                 {
                     cbBCM.Items.Add(Path.GetFileName(memoryFile.Name));
                 }
-                writeToOutput("File: " + memoryFile.Name + " at: " + memoryFile.OriginalAddress.ToString("X"));
+                WriteToOutput("File: " + memoryFile.Name + " at: " + memoryFile.OriginalAddress.ToString("X"));
             }
 
             if (cbBAC.Items.Count > 0)
@@ -190,7 +206,7 @@ namespace RealtimeEditor
             }
 
             Console.WriteLine("Done.");
-            writeToOutput("Ready to load JSON.");
+            WriteToOutput("Ready to load JSON.");
         }
 
         private void bSelectBACJson_Click(object sender, EventArgs e)
@@ -228,7 +244,7 @@ namespace RealtimeEditor
             }
 
             UpdateFileInMemory(dialog.FileName);
-            writeToOutput("Loaded: " + Path.GetFileName(dialog.FileName));
+            WriteToOutput("Loaded: " + Path.GetFileName(dialog.FileName));
         }
 
         private void bSelectBCMJson_Click(object sender, EventArgs e)
@@ -265,14 +281,14 @@ namespace RealtimeEditor
             }
 
             UpdateFileInMemory(dialog.FileName);
-            writeToOutput("Loaded: " + Path.GetFileName(dialog.FileName));
+            WriteToOutput("Loaded: " + Path.GetFileName(dialog.FileName));
         }
 
         void FileModified(object sender, FileSystemEventArgs e)
         {
             Console.WriteLine("File modified: " + e.FullPath);
             Console.WriteLine("Updating file in memory");
-            writeToOutput("File modified: " + e.Name);
+            WriteToOutput("File modified: " + e.Name);
             WaitReady(e.FullPath);
             UpdateFileInMemory(e.FullPath);
         }
@@ -349,7 +365,7 @@ namespace RealtimeEditor
 
                 Memory.Write(memFile.NewAddress, fileBytes.ToArray());
                 Console.WriteLine("Wrote file to: " + memFile.NewAddress.ToString("X"));
-                writeToOutput("Wrote: " + Path.GetFileName(fileName) + " to " + memFile.Name + " - " +
+                WriteToOutput("Wrote: " + Path.GetFileName(fileName) + " to " + memFile.Name + " - " +
                               memFile.NewAddress.ToString("X"));
             }
         }
@@ -398,7 +414,7 @@ namespace RealtimeEditor
             cbBAC.Items.Clear();
             cbBCM.Items.Clear();
             MemoryFileList = new List<MemoryFile>();
-            writeToOutput("Game restored");
+            WriteToOutput("Game restored");
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -406,6 +422,9 @@ namespace RealtimeEditor
         }
     }
 
+    /// <summary>
+    /// Data class containing information about the memory addresses, JSON file used, type of file (BAC/BCM)... and other?
+    /// </summary>
     public class MemoryFile
     {
         public long OriginalAddress { get; set; }
