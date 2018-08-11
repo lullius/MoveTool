@@ -1,12 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using Newtonsoft.Json;
-
-// TODO: Turn ProjectileLimit into four 8-bit parts.
 
 namespace MoveLib.BCM
 {
@@ -242,11 +240,7 @@ namespace MoveLib.BCM
                     int restrict2 = inFile.ReadInt32();
                     float restrictDistance = inFile.ReadSingle();
                     int unknown4 = (BCMVER > 0) ? inFile.ReadInt32() : 0;
-                    // CHANGED: split projectileRestrict into 4 bytes.
-                    byte projectileRestrict1 = inFile.ReadByte();
-                    byte projectileRestrict2 = inFile.ReadByte();
-                    byte projectileRestrict3 = inFile.ReadByte();
-                    byte projectileRestrict4 = inFile.ReadByte();
+                    int projectileRestrict = inFile.ReadInt32();
                     int unknown6 = inFile.ReadInt16();
                     int unknown7 = inFile.ReadInt16();
                     short unknown8 = inFile.ReadInt16();
@@ -272,18 +266,15 @@ namespace MoveLib.BCM
                         Unknown3 = restrict2,
                         RestrictionDistance = restrictDistance,
                         Unknown4 = unknown4,
-                        ProjectileLimit1 = projectileRestrict1,
-                        ProjectileLimit2 = projectileRestrict2,
-                        ProjectileLimit3 = projectileRestrict3,
-                        ProjectileLimit4 = projectileRestrict4,
+                        ProjectileLimit = projectileRestrict,
                         Unknown6 = (short)unknown6,
                         Unknown7 = (short)unknown7,
                         Unknown8 = unknown8,
                         Unknown9 = unknown9,
                         Unknown10 = unknown10,
                         Unknown11 = unknown11,
-                        MeterRequirement =  MeterRequirement,
-                        MeterUsed = MeterUsed,
+                        MeterRequirement =  (short)MeterRequirement,
+                        MeterUsed = (short)MeterUsed,
                         VtriggerRequirement = (short)VtriggerRequirement,
                         VtriggerUsed = (short)VtriggerUsed,
                         Unknown16 = Unknown16,
@@ -320,10 +311,7 @@ namespace MoveLib.BCM
                                     + "\nRestrict2: " + restrict2
                                     + "\nRestrictDistance: " + restrictDistance
                                     + "\nUnknown4: " + unknown4
-                                    + "\nProjectileRestrict1: " + projectileRestrict1
-                                    + "\nProjectileRestrict2: " + projectileRestrict2
-                                    + "\nProjectileRestrict3: " + projectileRestrict3
-                                    + "\nProjectileRestrict4: " + projectileRestrict4
+                                    + "\nProjectileRestrict: " + projectileRestrict
                                     + "\nUnknown6: " + unknown6
                                     + "\nUnknown7: " + unknown7
                                     + "\nUnknown8: " + unknown8
@@ -555,7 +543,7 @@ namespace MoveLib.BCM
                 {
                     byte[] headerBytes =
                     {
-                        0x23, 0x42, 0x43, 0x4D, 0xFE, 0xFF, 0x2c, 0x00, 0x00, 0x00, 0x00, 0x00
+                        0x23, 0x42, 0x43, 0x4D, 0xFE, 0xFF, 0x2c, 0x00, 0x00, 0x00, 0x01, 0x00
                     };
 
                     outFile.Write(headerBytes);
@@ -704,10 +692,8 @@ namespace MoveLib.BCM
                         outFile.Write(file.Moves[i].PositionRestriction);
                         outFile.Write(file.Moves[i].Unknown3);
                         outFile.Write(file.Moves[i].RestrictionDistance);
-                        outFile.Write(file.Moves[i].ProjectileLimit1);
-                        outFile.Write(file.Moves[i].ProjectileLimit2);
-                        outFile.Write(file.Moves[i].ProjectileLimit3);
-                        outFile.Write(file.Moves[i].ProjectileLimit4);
+                        outFile.Write(file.Moves[i].Unknown4);
+                        outFile.Write(file.Moves[i].ProjectileLimit);
                         outFile.Write(file.Moves[i].Unknown6);
                         outFile.Write(file.Moves[i].Unknown7);
                         outFile.Write(file.Moves[i].Unknown8);
@@ -728,7 +714,7 @@ namespace MoveLib.BCM
 
                         outFile.Write(file.Moves[i].Unknown17);
                         outFile.Write(file.Moves[i].Unknown18);
-                        outFile.Write(file.Moves[i].Unknown19);
+                        //outFile.Write(file.Moves[i].Unknown19); // Why is this omitted?
                         outFile.Write(file.Moves[i].Unknown20);
                         outFile.Write(file.Moves[i].Unknown21);
                         outFile.Write(file.Moves[i].Unknown22);
@@ -978,12 +964,7 @@ namespace MoveLib.BCM
         public int Unknown3 { get; set; }
         public float RestrictionDistance { get; set; }
         public int Unknown4 { get; set; }
-        // CHANGED: ProjectileLimit split into 4 parts
-        public byte ProjectileLimit1 { get; set; }
-        public byte ProjectileLimit2 { get; set; }
-        public byte ProjectileLimit3 { get; set; }
-        public byte ProjectileLimit4 { get; set; }
-        // ---
+        public int ProjectileLimit { get; set; }
         public short Unknown6 { get; set; }
         public short Unknown7 { get; set; }
         public short Unknown8 { get; set; }
