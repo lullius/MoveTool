@@ -1,3 +1,6 @@
+# MoveTool has moved!
+MoveTool's new repository is here: https://github.com/DoctorBearPhD/MoveTool
+
 # MoveTool
 A tool that outputs JSON files from Street Fighter 5's BCM, BAC and BCH (uasset) files and rebuilds those files from JSON.
 
@@ -93,6 +96,10 @@ http://steamcommunity.com/groups/SFVJUGGLEMOD
 https://discord.gg/g77WMvu
 
 Thank you TOOLASSISTED and WydD for submitting code and finding out how all the new stuff works.
+
+Thank you DoctorBearPhD for submitting code and for being MoveTool's new maintainer.
+
+
 
 ### Other stuff
 This tool uses Json.NET from Newtonsoft which uses an MIT license:
