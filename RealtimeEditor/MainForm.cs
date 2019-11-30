@@ -52,6 +52,12 @@ namespace RealtimeEditor
 
         private void OnClick_ScanButton(object sender, EventArgs e)
         {
+            if (Memory == null)
+            {
+                // SFV process was not found. Don't scan.
+                return;
+            }
+
             // Reset combo boxes and file list.
             cbBAC.Items.Clear();
             cbBCM.Items.Clear();
@@ -407,10 +413,7 @@ namespace RealtimeEditor
             cbBCM.Items.Clear();
             MemoryFileList = new List<MemoryFile>();
             WriteToOutput("Game restored");
-        }
-
-        private void MainForm_Load(object sender, EventArgs e)
-        {
+            lBAC.Text = lBCM.Text = "No JSON-file set.";
         }
     }
 

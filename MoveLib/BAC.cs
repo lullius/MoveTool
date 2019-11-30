@@ -7,10 +7,17 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 
+
+// TODO: Update footer location in header bytes when writing to uasset.
 namespace MoveLib.BAC
 {
     public static class BAC
     {
+        /// <summary>
+        /// Converts a BAC Uasset into a JSON file.
+        /// </summary>
+        /// <param name="inFile">Path of BAC_***.uasset file to be converted to JSON.</param>
+        /// <param name="outFile">Desired name/path for converted file.</param>
         public static void BacToJson(string inFile, string outFile)
         {
             BACFile bac;
@@ -25,9 +32,7 @@ namespace MoveLib.BAC
                 throw;
             }
 
-            Formatting format = Formatting.Indented;
-
-            var json = JsonConvert.SerializeObject(bac, format, new StringEnumConverter());
+            var json = JsonConvert.SerializeObject(bac, Formatting.Indented, new StringEnumConverter());
 
             File.WriteAllText(outFile, json);
         }
@@ -50,10 +55,12 @@ namespace MoveLib.BAC
             {
                 ToUassetFile(bac, outFile);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine($"Error converting to UAsset: \n{ex.Message} \n{ex.InnerException}");
                 return false;
             }
+
             return true;
         }
 
@@ -107,10 +114,12 @@ namespace MoveLib.BAC
                     baseMoveAddresses.Add(inFile.ReadInt32());
                 }
 
-                BACFile file = new BACFile();
-                file.RawUassetHeaderDontTouch = UassetHeaderBytes;
-                file.MoveLists = new MoveList[MoveListCount];
-                file.BACVER = BACVER;
+                BACFile file = new BACFile
+                {
+                    RawUassetHeaderDontTouch = UassetHeaderBytes,
+                    MoveLists = new MoveList[MoveListCount],
+                    BACVER = BACVER
+                };
 
                 for (int i = 0; i < baseMoveAddresses.Count; i++)
                 {
@@ -139,9 +148,11 @@ namespace MoveLib.BAC
                     List<int> MoveAddresses = new List<int>();
                     List<int> NameAddresses = new List<int>();
 
-                    file.MoveLists[i] = new MoveList();
-                    file.MoveLists[i].Unknown1 = unknown1;
-                    file.MoveLists[i].Moves = new Move[MoveCount];
+                    file.MoveLists[i] = new MoveList
+                    {
+                        Unknown1 = unknown1,
+                        Moves = new Move[MoveCount]
+                    };
 
                     for (int j = 0; j < MoveCount; j++)
                     {
@@ -779,7 +790,7 @@ namespace MoveLib.BAC
                                         thisType11.Unknown2 = inFile.ReadInt16();
                                         thisType11.Unknown3 = inFile.ReadInt16();
 
-                                        thisType11.Type = inFile.ReadInt16();
+                                        thisType11.EffectId = inFile.ReadInt16();
                                         thisType11.Unknown5 = inFile.ReadInt16();
                                         thisType11.AttachPoint = inFile.ReadInt16();
 
@@ -794,7 +805,7 @@ namespace MoveLib.BAC
                                         Debug.WriteLine(
                                             "thisType11 - TickStart: {0}, TickEnd: {1}, Unknown1: {2}, Unknown2: {3}, Unknown3:{4}, Type: {5}, Unknown5: {6}, AttachPoint: {7}, X: {8}, Y: {9}, Z: {10}, Unknown10: {11}, Size: {12}, Unknown12:{13}, filePos: {14}",
                                             thisType11.TickStart, thisType11.TickEnd, thisType11.Unknown1,
-                                            thisType11.Unknown2, thisType11.Unknown3, thisType11.Type,
+                                            thisType11.Unknown2, thisType11.Unknown3, thisType11.EffectId,
                                             thisType11.Unknown5, thisType11.AttachPoint, thisType11.X,
                                             thisType11.Y, thisType11.Z, thisType11.Unknown10,
                                             thisType11.Size, thisType11.Unknown12, thisPosition.ToString("X"));
@@ -989,10 +1000,7 @@ namespace MoveLib.BAC
                                         }
                                         break;
                                     }
-                                    
                             }
-                            
-
                         }
 
                         foreach (var typeInfo in TypeInfoList)
@@ -2112,7 +2120,7 @@ namespace MoveLib.BAC
                                 outFile.Write(type11.Unknown2);
                                 outFile.Write(type11.Unknown3);
 
-                                outFile.Write(type11.Type);
+                                outFile.Write(type11.EffectId);
                                 outFile.Write(type11.Unknown5);
                                 outFile.Write(type11.AttachPoint);
 
@@ -2252,21 +2260,18 @@ namespace MoveLib.BAC
                 Debug.WriteLine("Done with HitboxEffects! Now doing Names... CurrentPos: " + outFile.BaseStream.Position.ToString("X"));
 
                 for (int i = 0; i < file.MoveLists.Length; i++)
-               {
+                {
                    List<long> NamePositions = new List<long>();
 
                    for (int j = 0; j < file.MoveLists[i].Moves.Length; j++)
-                    {
-                        if (file.MoveLists[i].Moves[j] == null)
-                        {
-                            continue;
-                        }
-
+                   {
+                       if (file.MoveLists[i].Moves[j] == null) continue;
+                       
                        NamePositions.Add(outFile.BaseStream.Position);
                        outFile.Write(file.MoveLists[i].Moves[j].Name.ToCharArray());
            
-                        outFile.Write((byte)0x00);
-                    }
+                       outFile.Write((byte)0x00);
+                   }
 
                    for (int k = 0; k < file.MoveLists[i].Moves.Length; k++)
                    {
@@ -2418,13 +2423,14 @@ namespace MoveLib.BAC
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            Debug.WriteLine($"\"{reader.Value}\" of type \"{reader.TokenType}\" found. Attempting conversion...");
-
             try
             {
                 switch (reader.TokenType)
                 {
                     case JsonToken.String:
+
+                        Debug.WriteLine($"\"{reader.Value}\" of type \"{reader.TokenType}\" found. Attempting conversion...");
+
                         var enumText = reader.Value.ToString();
                         var convertedStr = (int)Enum.Parse(typeof(ForceEnum), enumText);
 
@@ -2434,8 +2440,6 @@ namespace MoveLib.BAC
 
                     case JsonToken.Integer:
                         var convertedInt = Convert.ChangeType(reader.Value, objectType);
-
-                        Debug.WriteLine($"\tConverted \"{reader.Value}\" to {convertedInt}");
 
                         return convertedInt;
                 }
@@ -2505,20 +2509,23 @@ namespace MoveLib.BAC
         public int HeaderSize { get; set; }
 
 
-        public short Unknown12 { get; set; }
-        public short Unknown13 { get; set; }
+        public short Unknown12 { get; set; } // Projectile GFX 1
+        public short Unknown13 { get; set; } // Projectile GFX 2
 
-        public short Unknown14 { get; set; }
-        public short Unknown15 { get; set; }
-        public short Unknown16 { get; set; }
-        public short Unknown17 { get; set; }
-        public float Unknown18 { get; set; }
-        public short Unknown19 { get; set; }
+        public short Unknown14 { get; set; } // ???
 
-        public short Unknown20 { get; set; }
+        public short Unknown15 { get; set; } // Projectile Hit Ground GFX 1
+        public short Unknown16 { get; set; } // Projectile Hit Ground GFX 2
 
-        public short Unknown21 { get; set; }
-        public short Unknown22 { get; set; }
+        public short Unknown17 { get; set; } // ???
+
+        public float Unknown18 { get; set; } // Projectile Size
+        public short Unknown19 { get; set; } // Projectile Hit Ground SFX
+
+        public short Unknown20 { get; set; } // ???
+
+        public short Unknown21 { get; set; } // ???
+        public short Unknown22 { get; set; } // ???
 
 
         public AutoCancel[] AutoCancels { get; set; }
@@ -2638,10 +2645,13 @@ namespace MoveLib.BAC
         public string MoveIndexName { get; set; }
 
         public short ScriptStartTime { get; set; }
-        public short NumberOfInts { get; set; }
-        public int Unknown2 { get; set; }
+        private short Unknown1 { set => ScriptStartTime = value; }
 
-        public int Unknown3 { get; set; }
+        public short NumberOfInts { get; set; }
+
+        public int Unknown2 { get; set; } // Something to do with SkillID
+        public int Unknown3 { get; set; } // if Unknown2 is 24, this value is the Skill ID used for trials
+
         public int Unknown4 { get; set; }
 
         public int Offset { get; set; }
@@ -2892,7 +2902,10 @@ namespace MoveLib.BAC
         public short Unknown1 { get; set; }
         public short Unknown2 { get; set; }
         public short Unknown3 { get; set; }
-        public short Type { get; set; }
+
+        public short EffectId { get; set; }
+        private short Type { set => EffectId = value; }
+
         public short Unknown5 { get; set; }
         public short AttachPoint { get; set; }
 

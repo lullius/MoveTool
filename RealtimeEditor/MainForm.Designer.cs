@@ -182,7 +182,6 @@
             this.ShowIcon = false;
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.Text = "Real-time editor";
-            this.Load += new System.EventHandler(this.MainForm_Load);
             this.gbBAC.ResumeLayout(false);
             this.gbBCM.ResumeLayout(false);
             this.ResumeLayout(false);

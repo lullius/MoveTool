@@ -240,7 +240,9 @@ namespace MoveLib.BCM
                     int restrict2 = inFile.ReadInt32();
                     float restrictDistance = inFile.ReadSingle();
                     int unknown4 = (BCMVER > 0) ? inFile.ReadInt32() : 0;
-                    int projectileRestrict = inFile.ReadInt32();
+                    // CHANGED: split projectileRestrict into 2 16bit properties.
+                    var projectileGroup = inFile.ReadInt16();
+                    var projectileMaxCount = inFile.ReadInt16();
                     int unknown6 = inFile.ReadInt16();
                     int unknown7 = inFile.ReadInt16();
                     short unknown8 = inFile.ReadInt16();
@@ -266,7 +268,8 @@ namespace MoveLib.BCM
                         Unknown3 = restrict2,
                         RestrictionDistance = restrictDistance,
                         Unknown4 = unknown4,
-                        ProjectileLimit = projectileRestrict,
+                        ProjectileGroup = projectileGroup,
+                        ProjectileMaxCount = projectileMaxCount,
                         Unknown6 = (short)unknown6,
                         Unknown7 = (short)unknown7,
                         Unknown8 = unknown8,
@@ -311,7 +314,8 @@ namespace MoveLib.BCM
                                     + "\nRestrict2: " + restrict2
                                     + "\nRestrictDistance: " + restrictDistance
                                     + "\nUnknown4: " + unknown4
-                                    + "\nProjectileRestrict: " + projectileRestrict
+                                    + "\nProjectileGroup: " + projectileGroup
+                                    + "\nProjectileMaxCount: " + projectileMaxCount
                                     + "\nUnknown6: " + unknown6
                                     + "\nUnknown7: " + unknown7
                                     + "\nUnknown8: " + unknown8
@@ -356,7 +360,7 @@ namespace MoveLib.BCM
 
                     if (thisAddress == 0)
                     {
-                        CancelLists.Add(new CancelList());
+                        CancelLists.Add(thisCancelList);
                         continue;
                     }
 
@@ -370,7 +374,7 @@ namespace MoveLib.BCM
                     int StartOfCancelBytes = inFile.ReadInt32(); 
 
                     Debug.WriteLine("ThisCancelAddress: " + thisAddress.ToString("X"));
-                    Debug.WriteLine("Cancel {6}:\nCU1: {0}\nMovesInList: {1}\nNumberOfSomethingInList: {2}\nStartOffset: {3}\nCU5: {4}\nEndOffset: {5}\n", thisCancelList.Unknown1, MovesInList, LastIndex, StartOffset.ToString("X"), StartOfCancelInts.ToString("X"), StartOfCancelBytes.ToString("X"), i);
+                    Debug.WriteLine($"Cancel {i}:\nCU1: {thisCancelList.Unknown1}\nMovesInList: {MovesInList}\nNumberOfSomethingInList: {LastIndex}\nStartOffset: {StartOffset.ToString("X")}\nCU5: {StartOfCancelInts.ToString("X")}\nEndOffset: {StartOfCancelBytes.ToString("X")}\n");
 
                     inFile.BaseStream.Seek(thisAddress + StartOffset, SeekOrigin.Begin);
                     Debug.WriteLine("ListAddress: " + (thisAddress + StartOffset).ToString("X"));
@@ -454,33 +458,47 @@ namespace MoveLib.BCM
 
                         var cancelBytesBelongsTo = thisCancelList.Cancels.First(x => x.Index == j);
 
-                        cancelBytesBelongsTo.UnknownBytes = inFile.ReadBytes(0x24);
+                        var unkBytes = inFile.ReadBytes(0x24);
+                        
+                        cancelBytesBelongsTo.UnknownBytes = unkBytes;
                     }
 
                     CancelLists.Add(thisCancelList);
                     Debug.WriteLine("\n");
                 }
 
-                foreach (var cancelList in CancelLists)
+                try
                 {
-                    if (cancelList.Cancels == null)
+                    foreach (var cancelList in CancelLists)
                     {
-                        continue;
-                    }
-
-                    foreach (var cancel in cancelList.Cancels)
-                    {
-                        if (cancel == null)
+                        if (cancelList?.Cancels == null)
                         {
                             continue;
                         }
-                        Debug.WriteLine("Cancel: " + cancel.Index + " ScriptIndex:" + cancel.ScriptIndex);
-                        foreach (var unknownByte in cancel.UnknownBytes)
+
+                        Debug.WriteLine($"\nCancelList Index: {cancelList.Index}\n");
+
+                        foreach (var cancel in cancelList.Cancels)
                         {
-                            Debug.Write(unknownByte.ToString("X") + " ");
+                            if (cancel == null)
+                            {
+                                continue;
+                            }
+
+                            Debug.WriteLine("Cancel: " + cancel.Index + " ScriptIndex:" + cancel.ScriptIndex);
+                            
+                            foreach (var unknownByte in cancel.UnknownBytes)
+                            {
+                                Debug.Write(unknownByte.ToString("X") + " ");
+                            }
+
+                            Debug.WriteLine("");
                         }
-                        Debug.WriteLine("");
                     }
+                }
+                catch (Exception)
+                {
+                    Debug.WriteLine("Are the Cancel indices of the CancelList in order?");
                 }
 
                 Debug.WriteLine("\nCharges\n");
@@ -693,7 +711,8 @@ namespace MoveLib.BCM
                         outFile.Write(file.Moves[i].Unknown3);
                         outFile.Write(file.Moves[i].RestrictionDistance);
                         outFile.Write(file.Moves[i].Unknown4);
-                        outFile.Write(file.Moves[i].ProjectileLimit);
+                        outFile.Write(file.Moves[i].ProjectileGroup);
+                        outFile.Write(file.Moves[i].ProjectileMaxCount);
                         outFile.Write(file.Moves[i].Unknown6);
                         outFile.Write(file.Moves[i].Unknown7);
                         outFile.Write(file.Moves[i].Unknown8);
@@ -714,7 +733,7 @@ namespace MoveLib.BCM
 
                         outFile.Write(file.Moves[i].Unknown17);
                         outFile.Write(file.Moves[i].Unknown18);
-                        //outFile.Write(file.Moves[i].Unknown19); // Why is this omitted?
+                        outFile.Write(file.Moves[i].Unknown19); // TODO: Why is this omitted?
                         outFile.Write(file.Moves[i].Unknown20);
                         outFile.Write(file.Moves[i].Unknown21);
                         outFile.Write(file.Moves[i].Unknown22);
@@ -964,7 +983,20 @@ namespace MoveLib.BCM
         public int Unknown3 { get; set; }
         public float RestrictionDistance { get; set; }
         public int Unknown4 { get; set; }
-        public int ProjectileLimit { get; set; }
+        // CHANGED: ProjectileLimit split into 2 parts
+        public short ProjectileGroup { get; set; }
+        public short ProjectileMaxCount { get; set; }
+
+        private int ProjectileLimit
+        {
+            set
+            {
+                ProjectileGroup = (short)(value & 0x00FF >> 0);
+                ProjectileMaxCount = (short)(value & 0xFF00 >> 8);
+            }
+        }
+
+        // ---
         public short Unknown6 { get; set; }
         public short Unknown7 { get; set; }
         public short Unknown8 { get; set; }
