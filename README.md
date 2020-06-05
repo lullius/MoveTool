@@ -4,9 +4,11 @@ A tool that outputs JSON files from Street Fighter 5's BCM, BAC and BCH (uasset)
 ## How to use
 Drag Uasset or JSON files on top of MoveTool.exe
 
+NOTE: If you are having issues with RTE on Windows 10, set it to Windows 7 compatibility mode.
+
 ## Todo
-Find out what all the values means and fix remaining BAC files. Se Bugs below.
-Many values are probably read in the wrong format (short/int etc).
+Find out what all the values mean and fix remaining BAC files. See Bugs below.
+Many values are probably read in the wrong format (short/int/etc).
 
 ## Bugs
 Unit test shows that MoveTool is not able to recreate these files:
