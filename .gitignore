@@ -1,0 +1,11 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/MoveTool/obj
+/.vs
+*/obj
+*/bin
+*.user
+*.config
+/packages/*

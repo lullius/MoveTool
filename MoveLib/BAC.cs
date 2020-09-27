@@ -3,13 +3,21 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 
+
+// TODO: Update footer location in header bytes when writing to uasset.
 namespace MoveLib.BAC
 {
     public static class BAC
     {
+        /// <summary>
+        /// Converts a BAC Uasset into a JSON file.
+        /// </summary>
+        /// <param name="inFile">Path of BAC_***.uasset file to be converted to JSON.</param>
+        /// <param name="outFile">Desired name/path for converted file.</param>
         public static void BacToJson(string inFile, string outFile)
         {
             BACFile bac;
@@ -24,9 +32,7 @@ namespace MoveLib.BAC
                 throw;
             }
 
-            Formatting format = Formatting.Indented;
-
-            var json = JsonConvert.SerializeObject(bac, format, new Newtonsoft.Json.Converters.StringEnumConverter());
+            var json = JsonConvert.SerializeObject(bac, Formatting.Indented, new StringEnumConverter());
 
             File.WriteAllText(outFile, json);
         }
@@ -37,7 +43,7 @@ namespace MoveLib.BAC
 
             try
             {
-                bac = JsonConvert.DeserializeObject<BACFile>(File.ReadAllText(inFile));
+                bac = JsonConvert.DeserializeObject<BACFile>(File.ReadAllText(inFile), new ForceEnumConverter(), new StringEnumConverter());
             }
             catch (Exception ex)
             {
@@ -49,10 +55,12 @@ namespace MoveLib.BAC
             {
                 ToUassetFile(bac, outFile);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine($"Error converting to UAsset: \n{ex.Message} \n{ex.InnerException}");
                 return false;
             }
+
             return true;
         }
 
@@ -106,16 +114,18 @@ namespace MoveLib.BAC
                     baseMoveAddresses.Add(inFile.ReadInt32());
                 }
 
-                BACFile file = new BACFile();
-                file.RawUassetHeaderDontTouch = UassetHeaderBytes;
-                file.MoveLists = new MoveList[MoveListCount];
-                file.BACVER = BACVER;
+                BACFile file = new BACFile
+                {
+                    RawUassetHeaderDontTouch = UassetHeaderBytes,
+                    MoveLists = new MoveList[MoveListCount],
+                    BACVER = BACVER
+                };
 
                 for (int i = 0; i < baseMoveAddresses.Count; i++)
                 {
                     int thisAddress = baseMoveAddresses[i];
 
-                    Debug.WriteLine("Unknown1 at pos: " + thisAddress.ToString("X") + "  -  Index:" + i);
+                    Debug.WriteLine("ScriptStartTime at pos: " + thisAddress.ToString("X") + "  -  Index:" + i);
 
                     inFile.BaseStream.Seek(thisAddress, SeekOrigin.Begin);
 
@@ -138,9 +148,11 @@ namespace MoveLib.BAC
                     List<int> MoveAddresses = new List<int>();
                     List<int> NameAddresses = new List<int>();
 
-                    file.MoveLists[i] = new MoveList();
-                    file.MoveLists[i].Unknown1 = unknown1;
-                    file.MoveLists[i].Moves = new Move[MoveCount];
+                    file.MoveLists[i] = new MoveList
+                    {
+                        Unknown1 = unknown1,
+                        Moves = new Move[MoveCount]
+                    };
 
                     for (int j = 0; j < MoveCount; j++)
                     {
@@ -180,11 +192,11 @@ namespace MoveLib.BAC
 
                         #region DebuggingPurposes
 
-                        int Size = 0;
+                        int size;
 
                         if (j == MoveAddresses.Count - 1)
                         {
-                            Size = 0;
+                            size = 0;
                         }
                         else
                         {
@@ -194,15 +206,15 @@ namespace MoveLib.BAC
                                 nextAddress++;
                             }
 
-                            Size = (MoveAddresses[j + nextAddress] - thisMoveAddress);
+                            size = (MoveAddresses[j + nextAddress] - thisMoveAddress);
 
-                            if (Size < 0)
+                            if (size < 0)
                             {
                                 Debug.WriteLine("Size was smaller than 0?? Next address:" + MoveAddresses[j+nextAddress].ToString("X") + " This Address: " + thisMoveAddress.ToString("X") );
                             }
                         }
 
-                        Debug.WriteLine("Size: " + Size);
+                        Debug.WriteLine("Size: " + size);
 
                         #endregion
 
@@ -216,12 +228,12 @@ namespace MoveLib.BAC
                             TotalTicks = inFile.ReadInt32(),
                         
                             ReturnToOriginalPosition = inFile.ReadInt32(),
-                            Slide = inFile.ReadSingle(),
-                            unk3 = inFile.ReadSingle(),
-                            unk4 = inFile.ReadSingle(),
-                            unk5 = inFile.ReadSingle(),
-                            unk6 = inFile.ReadSingle(),
-                            unk7 = inFile.ReadSingle(),
+                            XSpeedMultiplier = inFile.ReadSingle(),
+                            YSpeedMultiplier = inFile.ReadSingle(),
+                            ZSpeedMultiplier = inFile.ReadSingle(),
+                            XAcceleration = inFile.ReadSingle(),
+                            YAcceleration = inFile.ReadSingle(),
+                            ZAcceleration = inFile.ReadSingle(),
                             Flag = inFile.ReadInt32(),
                             unk9 = inFile.ReadInt32(),
 
@@ -349,16 +361,18 @@ namespace MoveLib.BAC
                                         
                                         inFile.BaseStream.Seek(thisType0Address, SeekOrigin.Begin);
 
-                                        AutoCancel thisType0 = new AutoCancel();
-                                        thisType0.TickStart = tickStarts[l];
-                                        thisType0.TickEnd = tickEnds[l];
-                                        thisType0.Condition = (AutoCancelCondition) inFile.ReadInt16();
-                                        thisType0.MoveIndex = inFile.ReadInt16();
-                                        thisType0.Unknown1 = inFile.ReadInt16();
-                                        thisType0.NumberOfInts = inFile.ReadInt16();
-                                        thisType0.Unknown2 = inFile.ReadInt32();
+                                        AutoCancel thisType0 = new AutoCancel
+                                        {
+                                            TickStart = tickStarts[l],
+                                            TickEnd = tickEnds[l],
+                                            Condition = (AutoCancelCondition) inFile.ReadInt16(),
+                                            MoveIndex = inFile.ReadInt16(),
+                                            ScriptStartTime = inFile.ReadInt16(),
+                                            NumberOfInts = inFile.ReadInt16(),
+                                            Unknown2 = inFile.ReadInt32()
+                                        };
 
-                                            switch (BACVER)
+                                        switch (BACVER)
                                             {
                                                 case 1:
                                                     {
@@ -383,9 +397,9 @@ namespace MoveLib.BAC
                                             }
 
                                         Debug.WriteLine(
-                                            "thisType0 - TickStart: {0}, TickEnd: {1}, Condition: {2}, MoveIndex: {3}, Unknown1: {4}, NumberOfInts: {5}, Unknown2: {6} Offset: {7} Unknown3: {8} Unknown4: {9}",
+                                            "thisType0 - TickStart: {0}, TickEnd: {1}, Condition: {2}, MoveIndex: {3}, ScriptStartTime: {4}, NumberOfInts: {5}, Unknown2: {6} Offset: {7} Unknown3: {8} Unknown4: {9}",
                                             thisType0.TickStart, thisType0.TickEnd, thisType0.Condition,
-                                            thisType0.MoveIndex, thisType0.Unknown1, thisType0.NumberOfInts,
+                                            thisType0.MoveIndex, thisType0.ScriptStartTime, thisType0.NumberOfInts,
                                             thisType0.Unknown2, thisType0.Offset.ToString("X"),
                                             thisType0.Unknown3, thisType0.Unknown4);
 
@@ -435,7 +449,7 @@ namespace MoveLib.BAC
                                         thisForce.TickStart = tickStarts[l];
                                         thisForce.TickEnd = tickEnds[l];
                                         thisForce.Amount = inFile.ReadSingle();
-                                        thisForce.Flag = (ForceEnum) inFile.ReadInt32();
+                                        thisForce.Flag = inFile.ReadInt32();
 
                                         Debug.WriteLine(
                                             "thisForce - TickStart: {0}, TickEnd: {1}, Amount: {2}, Flag: {3}",
@@ -776,7 +790,7 @@ namespace MoveLib.BAC
                                         thisType11.Unknown2 = inFile.ReadInt16();
                                         thisType11.Unknown3 = inFile.ReadInt16();
 
-                                        thisType11.Type = inFile.ReadInt16();
+                                        thisType11.EffectId = inFile.ReadInt16();
                                         thisType11.Unknown5 = inFile.ReadInt16();
                                         thisType11.AttachPoint = inFile.ReadInt16();
 
@@ -791,7 +805,7 @@ namespace MoveLib.BAC
                                         Debug.WriteLine(
                                             "thisType11 - TickStart: {0}, TickEnd: {1}, Unknown1: {2}, Unknown2: {3}, Unknown3:{4}, Type: {5}, Unknown5: {6}, AttachPoint: {7}, X: {8}, Y: {9}, Z: {10}, Unknown10: {11}, Size: {12}, Unknown12:{13}, filePos: {14}",
                                             thisType11.TickStart, thisType11.TickEnd, thisType11.Unknown1,
-                                            thisType11.Unknown2, thisType11.Unknown3, thisType11.Type,
+                                            thisType11.Unknown2, thisType11.Unknown3, thisType11.EffectId,
                                             thisType11.Unknown5, thisType11.AttachPoint, thisType11.X,
                                             thisType11.Y, thisType11.Z, thisType11.Unknown10,
                                             thisType11.Size, thisType11.Unknown12, thisPosition.ToString("X"));
@@ -838,7 +852,7 @@ namespace MoveLib.BAC
                                     {
                                         if (inFile.BaseStream.Position > BACVERintAddresses[0])
                                         {
-                                            Debug.WriteLine("WE're At the WRONG POSITION, TOO FAR!");
+                                            Debug.WriteLine("We're At the WRONG POSITION, TOO FAR!");
                                             throw new Exception("WE WENT TOO FAR! (Position > BACVERintAddresses[0])");
                                         }
 
@@ -986,17 +1000,14 @@ namespace MoveLib.BAC
                                         }
                                         break;
                                     }
-                                    
                             }
-                            
-
                         }
 
                         foreach (var typeInfo in TypeInfoList)
                         {
                             Debug.WriteLine("Type:");
                             Debug.WriteLine("TickOffset: {0} DataOffset: {1} TypeNumber: {2} NumberOfType: {3}, TickAddress: {4}, DataAddress {5}", typeInfo.TickOffset.ToString("X"), typeInfo.DataOffset.ToString("X"), typeInfo.TypeNumber, typeInfo.NumberOfType, typeInfo.TickAddress.ToString("X"), typeInfo.DataAddress.ToString("X"));
-                            if (typeInfo.DataOffset > Size && Size > 0)
+                            if (typeInfo.DataOffset > size && size > 0)
                             {
                                 Debug.WriteLine("DataOffset BIGGER THAN Size????");
                             }
@@ -1235,8 +1246,6 @@ namespace MoveLib.BAC
             }
         }
 
-
-
         public static void ToUassetFile(BACFile file, string OutPutFileName)
         {
             byte[] outPutFileBytes;
@@ -1311,7 +1320,7 @@ namespace MoveLib.BAC
 
                     Debug.WriteLine("MoveCount: " + file.MoveLists[i].Moves.Length);
 
-                    foreach (var Move in file.MoveLists[i].Moves)
+                    foreach (var move in file.MoveLists[i].Moves)
                     {
                         outFile.Write(0);
                     }
@@ -1322,7 +1331,7 @@ namespace MoveLib.BAC
 
                     Debug.WriteLine("Names: " + StartOfMovesNamesOffset.ToString("X"));
 
-                    foreach (var Move in file.MoveLists[i].Moves)
+                    foreach (var move in file.MoveLists[i].Moves)
                     {
                         outFile.Write(0);
                     }
@@ -1330,9 +1339,9 @@ namespace MoveLib.BAC
 
                     int j = 0;
 
-                    foreach (var Move in file.MoveLists[i].Moves)
+                    foreach (var move in file.MoveLists[i].Moves)
                     {
-                        if (Move == null)
+                        if (move == null)
                         {
                             Common.WriteInt32ToPosition(outFile, StartOfMovesOffset +(j*4), 0);
                             j++;
@@ -1341,38 +1350,38 @@ namespace MoveLib.BAC
 
                         Common.WriteInt32ToPosition(outFile, StartOfMovesOffset +(j*4), (int)(outFile.BaseStream.Position - MoveTableBaseAddress));
 
-                        outFile.Write(Move.FirstHitboxFrame);
-                        outFile.Write(Move.LastHitboxFrame);
-                        outFile.Write(Move.InterruptFrame);
-                        outFile.Write(Move.TotalTicks);
-                        outFile.Write(Move.ReturnToOriginalPosition);
-                        outFile.Write(Move.Slide);
-                        outFile.Write(Move.unk3);
-                        outFile.Write(Move.unk4);
-                        outFile.Write(Move.unk5);
-                        outFile.Write(Move.unk6);
-                        outFile.Write(Move.unk7);
-                        outFile.Write(Move.Flag);
-                        outFile.Write(Move.unk9);
+                        outFile.Write(move.FirstHitboxFrame);
+                        outFile.Write(move.LastHitboxFrame);
+                        outFile.Write(move.InterruptFrame);
+                        outFile.Write(move.TotalTicks);
+                        outFile.Write(move.ReturnToOriginalPosition);
+                        outFile.Write(move.XSpeedMultiplier);
+                        outFile.Write(move.YSpeedMultiplier);
+                        outFile.Write(move.ZSpeedMultiplier);
+                        outFile.Write(move.XAcceleration);
+                        outFile.Write(move.YAcceleration);
+                        outFile.Write(move.ZAcceleration);
+                        outFile.Write(move.Flag);
+                        outFile.Write(move.unk9);
 
-                        outFile.Write(Move.numberOfTypes);
+                        outFile.Write(move.numberOfTypes);
 
-                        outFile.Write(Move.unk13);
-                        outFile.Write(Move.HeaderSize);
+                        outFile.Write(move.unk13);
+                        outFile.Write(move.HeaderSize);
 
-                        if (Move.HeaderSize == 0x58)
+                        if (move.HeaderSize == 0x58)
                         {
-                            outFile.Write(Move.Unknown12);
-                            outFile.Write(Move.Unknown13);
-                            outFile.Write(Move.Unknown14);
-                            outFile.Write(Move.Unknown15);
-                            outFile.Write(Move.Unknown16);
-                            outFile.Write(Move.Unknown17);
-                            outFile.Write(Move.Unknown18);
-                            outFile.Write(Move.Unknown19);
-                            outFile.Write(Move.Unknown20);
-                            outFile.Write(Move.Unknown21);
-                            outFile.Write(Move.Unknown22);
+                            outFile.Write(move.Unknown12);
+                            outFile.Write(move.Unknown13);
+                            outFile.Write(move.Unknown14);
+                            outFile.Write(move.Unknown15);
+                            outFile.Write(move.Unknown16);
+                            outFile.Write(move.Unknown17);
+                            outFile.Write(move.Unknown18);
+                            outFile.Write(move.Unknown19);
+                            outFile.Write(move.Unknown20);
+                            outFile.Write(move.Unknown21);
+                            outFile.Write(move.Unknown22);
                         }
 
                         long type0TickOffsetAddress = 0;
@@ -1389,125 +1398,125 @@ namespace MoveLib.BAC
                         long type11TickOffsetAddress = 0;
                         long PositionTickOffsetAddress = 0;
 
-                        if (Move.AutoCancels != null && Move.AutoCancels.Length > 0)
+                        if (move.AutoCancels != null && move.AutoCancels.Length > 0)
                         {
                             outFile.Write((short) 0);
-                            outFile.Write((short)Move.AutoCancels.Length);
+                            outFile.Write((short)move.AutoCancels.Length);
                             type0TickOffsetAddress = outFile.BaseStream.Position;
                             outFile.Write(0);
                             outFile.Write(0);
                             AddBytesDependingOnBACVER(file.BACVER, outFile);
                         }
-                        if (Move.Type1s != null && Move.Type1s.Length > 0)
+                        if (move.Type1s != null && move.Type1s.Length > 0)
                         {
                             outFile.Write((short)1);
-                            outFile.Write((short)Move.Type1s.Length);
+                            outFile.Write((short)move.Type1s.Length);
                             type1TickOffsetAddress = outFile.BaseStream.Position;
                             outFile.Write(0);
                             outFile.Write(0);
                             AddBytesDependingOnBACVER(file.BACVER, outFile);
                         }
-                        if (Move.Forces != null && Move.Forces.Length > 0)
+                        if (move.Forces != null && move.Forces.Length > 0)
                         {
                             outFile.Write((short)2);
-                            outFile.Write((short)Move.Forces.Length);
+                            outFile.Write((short)move.Forces.Length);
                             ForceTickOffsetAddress = outFile.BaseStream.Position;
                             outFile.Write(0);
                             outFile.Write(0);
                             AddBytesDependingOnBACVER(file.BACVER, outFile);
                         }
-                        if (Move.Cancels != null && Move.Cancels.Length > 0)
+                        if (move.Cancels != null && move.Cancels.Length > 0)
                         {
                             outFile.Write((short)3);
-                            outFile.Write((short)Move.Cancels.Length);
+                            outFile.Write((short)move.Cancels.Length);
                             type3TickOffsetAddress = outFile.BaseStream.Position;
                             outFile.Write(0);
                             outFile.Write(0);
                             AddBytesDependingOnBACVER(file.BACVER, outFile);
                         }
-                        if (Move.Others != null && Move.Others.Length > 0)
+                        if (move.Others != null && move.Others.Length > 0)
                         {
                             outFile.Write((short)4);
-                            outFile.Write((short)Move.Others.Length);
+                            outFile.Write((short)move.Others.Length);
                             type4TickOffsetAddress = outFile.BaseStream.Position;
                             outFile.Write(0);
                             outFile.Write(0);
                             AddBytesDependingOnBACVER(file.BACVER, outFile);
                         }
-                        if (Move.Hitboxes != null && Move.Hitboxes.Length > 0)
+                        if (move.Hitboxes != null && move.Hitboxes.Length > 0)
                         {
                             outFile.Write((short)5);
-                            outFile.Write((short)Move.Hitboxes.Length);
+                            outFile.Write((short)move.Hitboxes.Length);
                             HitboxTickOffsetAddress = outFile.BaseStream.Position;
                             outFile.Write(0);
                             outFile.Write(0);
                             AddBytesDependingOnBACVER(file.BACVER, outFile);
                         }
-                        if (Move.Hurtboxes != null && Move.Hurtboxes.Length > 0)
+                        if (move.Hurtboxes != null && move.Hurtboxes.Length > 0)
                         {
                             outFile.Write((short)6);
-                            outFile.Write((short)Move.Hurtboxes.Length);
+                            outFile.Write((short)move.Hurtboxes.Length);
                             HurtboxTickOffsetAddress = outFile.BaseStream.Position;
                             outFile.Write(0);
                             outFile.Write(0);
                             AddBytesDependingOnBACVER(file.BACVER, outFile);
                         }
-                        if (Move.PhysicsBoxes != null && Move.PhysicsBoxes.Length > 0)
+                        if (move.PhysicsBoxes != null && move.PhysicsBoxes.Length > 0)
                         {
                             outFile.Write((short)7);
-                            outFile.Write((short)Move.PhysicsBoxes.Length);
+                            outFile.Write((short)move.PhysicsBoxes.Length);
                             type7TickOffsetAddress = outFile.BaseStream.Position;
                             outFile.Write(0);
                             outFile.Write(0);
                             AddBytesDependingOnBACVER(file.BACVER, outFile);
                         }
-                        if (Move.Animations != null && Move.Animations.Length > 0)
+                        if (move.Animations != null && move.Animations.Length > 0)
                         {
                             outFile.Write((short)8);
-                            outFile.Write((short)Move.Animations.Length);
+                            outFile.Write((short)move.Animations.Length);
                             type8TickOffsetAddress = outFile.BaseStream.Position;
                             outFile.Write(0);
                             outFile.Write(0);
                             AddBytesDependingOnBACVER(file.BACVER, outFile);
                         }
-                        if (Move.Type9s != null && Move.Type9s.Length > 0)
+                        if (move.Type9s != null && move.Type9s.Length > 0)
                         {
                             outFile.Write((short)9);
-                            outFile.Write((short)Move.Type9s.Length);
+                            outFile.Write((short)move.Type9s.Length);
                             type9TickOffsetAddress = outFile.BaseStream.Position;
                             outFile.Write(0);
                             outFile.Write(0);
                             AddBytesDependingOnBACVER(file.BACVER, outFile);
                         }
-                        if (Move.SoundEffects != null && Move.SoundEffects.Length > 0)
+                        if (move.SoundEffects != null && move.SoundEffects.Length > 0)
                         {
                             outFile.Write((short)10);
-                            outFile.Write((short)Move.SoundEffects.Length);
+                            outFile.Write((short)move.SoundEffects.Length);
                             type10TickOffsetAddress = outFile.BaseStream.Position;
                             outFile.Write(0);
                             outFile.Write(0);
                             AddBytesDependingOnBACVER(file.BACVER, outFile);
                         }
-                        if (Move.VisualEffects != null && Move.VisualEffects.Length > 0)
+                        if (move.VisualEffects != null && move.VisualEffects.Length > 0)
                         {
                             outFile.Write((short)11);
-                            outFile.Write((short)Move.VisualEffects.Length);
+                            outFile.Write((short)move.VisualEffects.Length);
                             type11TickOffsetAddress = outFile.BaseStream.Position;
                             outFile.Write(0);
                             outFile.Write(0);
                             AddBytesDependingOnBACVER(file.BACVER, outFile);
                         }
-                        if (Move.Positions != null && Move.Positions.Length > 0)
+                        if (move.Positions != null && move.Positions.Length > 0)
                         {
                             outFile.Write((short)12);
-                            outFile.Write((short)Move.Positions.Length);
+                            outFile.Write((short)move.Positions.Length);
                             PositionTickOffsetAddress = outFile.BaseStream.Position;
                             outFile.Write(0);
                             outFile.Write(0);
                             AddBytesDependingOnBACVER(file.BACVER, outFile);
                         }
 
-                        if (Move.AutoCancels != null && Move.AutoCancels.Length > 0)
+                        if (move.AutoCancels != null && move.AutoCancels.Length > 0)
                         {
                             List<long> type0Offsets = new List<long>();
                             List<long> IntOffsets = new List<long>();
@@ -1515,7 +1524,7 @@ namespace MoveLib.BAC
 
                             Common.WriteInt32ToPosition(outFile, type0TickOffsetAddress, (int)(outFile.BaseStream.Position - (type0TickOffsetAddress - 4)));
 
-                            foreach (var type0 in Move.AutoCancels)
+                            foreach (var type0 in move.AutoCancels)
                             {
                                 outFile.Write(type0.TickStart);
                                 outFile.Write(type0.TickEnd);
@@ -1523,7 +1532,7 @@ namespace MoveLib.BAC
 
                             Common.WriteInt32ToPosition(outFile, type0TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type0TickOffsetAddress - 4)));
 
-                            foreach (var type0 in Move.AutoCancels)
+                            foreach (var type0 in move.AutoCancels)
                             {
                                 if (type0.Ints.Length != 0)
                                 {
@@ -1531,7 +1540,7 @@ namespace MoveLib.BAC
                                 }
                                 outFile.Write((short)type0.Condition);
                                 outFile.Write(type0.MoveIndex);
-                                outFile.Write(type0.Unknown1);
+                                outFile.Write(type0.ScriptStartTime);
                                 outFile.Write(type0.NumberOfInts);
                                 outFile.Write(type0.Unknown2);
 
@@ -1552,7 +1561,7 @@ namespace MoveLib.BAC
                                 outFile.Write(0);
                             }
 
-                            foreach (var type0 in Move.AutoCancels)
+                            foreach (var type0 in move.AutoCancels)
                             {
                                 if (type0.Ints.Length != 0)
                                 {
@@ -1576,7 +1585,7 @@ namespace MoveLib.BAC
                                         //TheBACunknownoffsetthingie
                                         Common.WriteInt32ToPosition(outFile, type0TickOffsetAddress + 8, (int)(outFile.BaseStream.Position - (type0TickOffsetAddress - 4)));
 
-                                        foreach (var type0 in Move.AutoCancels)
+                                        foreach (var type0 in move.AutoCancels)
                                         {
                                             outFile.Write(type0.BACVERint1);
                                             outFile.Write(type0.BACVERint2);
@@ -1589,11 +1598,11 @@ namespace MoveLib.BAC
                             }
                         }
 
-                        if (Move.Type1s != null && Move.Type1s.Length > 0)
+                        if (move.Type1s != null && move.Type1s.Length > 0)
                         {
                             Common.WriteInt32ToPosition(outFile, type1TickOffsetAddress, (int)(outFile.BaseStream.Position - (type1TickOffsetAddress - 4)));
 
-                            foreach (var type1 in Move.Type1s)
+                            foreach (var type1 in move.Type1s)
                             {
                                 outFile.Write(type1.TickStart);
                                 outFile.Write(type1.TickEnd);
@@ -1601,7 +1610,7 @@ namespace MoveLib.BAC
 
                             Common.WriteInt32ToPosition(outFile, type1TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type1TickOffsetAddress - 4)));
 
-                            foreach (var type1 in Move.Type1s)
+                            foreach (var type1 in move.Type1s)
                             {
                                 outFile.Write(type1.Flag1);
                                 outFile.Write(type1.Flag2);
@@ -1614,7 +1623,7 @@ namespace MoveLib.BAC
                                         //TheBACunknownoffsetthingie
                                         Common.WriteInt32ToPosition(outFile, type1TickOffsetAddress + 8, (int)(outFile.BaseStream.Position - (type1TickOffsetAddress - 4)));
 
-                                        foreach (var type1 in Move.Type1s)
+                                        foreach (var type1 in move.Type1s)
                                         {
                                             outFile.Write(type1.BACVERint1);
                                             outFile.Write(type1.BACVERint2);
@@ -1627,11 +1636,11 @@ namespace MoveLib.BAC
                             }
                         }
 
-                        if (Move.Forces != null && Move.Forces.Length > 0)
+                        if (move.Forces != null && move.Forces.Length > 0)
                         {
                             Common.WriteInt32ToPosition(outFile, ForceTickOffsetAddress, (int)(outFile.BaseStream.Position - (ForceTickOffsetAddress - 4)));
 
-                            foreach (var Force in Move.Forces)
+                            foreach (var Force in move.Forces)
                             {
                                 outFile.Write(Force.TickStart);
                                 outFile.Write(Force.TickEnd);
@@ -1639,7 +1648,7 @@ namespace MoveLib.BAC
 
                             Common.WriteInt32ToPosition(outFile, ForceTickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (ForceTickOffsetAddress - 4)));
 
-                            foreach (var Force in Move.Forces)
+                            foreach (var Force in move.Forces)
                             {
                                 outFile.Write(Force.Amount);
                                 outFile.Write((int)Force.Flag);
@@ -1653,7 +1662,7 @@ namespace MoveLib.BAC
                                             //TheBACunknownoffsetthingie
                                             Common.WriteInt32ToPosition(outFile, ForceTickOffsetAddress + 8, (int)(outFile.BaseStream.Position - (ForceTickOffsetAddress - 4)));
 
-                                            foreach (var Force in Move.Forces)
+                                            foreach (var Force in move.Forces)
                                             {
                                                 outFile.Write(Force.BACVERint1);
                                                 outFile.Write(Force.BACVERint2);
@@ -1666,11 +1675,11 @@ namespace MoveLib.BAC
                                 }
                         }
 
-                        if (Move.Cancels != null && Move.Cancels.Length > 0)
+                        if (move.Cancels != null && move.Cancels.Length > 0)
                         {
                             Common.WriteInt32ToPosition(outFile, type3TickOffsetAddress, (int)(outFile.BaseStream.Position - (type3TickOffsetAddress - 4)));
 
-                            foreach (var type3 in Move.Cancels)
+                            foreach (var type3 in move.Cancels)
                             {
                                 outFile.Write(type3.TickStart);
                                 outFile.Write(type3.TickEnd);
@@ -1678,7 +1687,7 @@ namespace MoveLib.BAC
 
                             Common.WriteInt32ToPosition(outFile, type3TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type3TickOffsetAddress - 4)));
 
-                            foreach (var type3 in Move.Cancels)
+                            foreach (var type3 in move.Cancels)
                             {
                                 outFile.Write(type3.CancelList);
                                 outFile.Write(type3.Type);
@@ -1691,7 +1700,7 @@ namespace MoveLib.BAC
                                         //TheBACunknownoffsetthingie
                                         Common.WriteInt32ToPosition(outFile, type3TickOffsetAddress + 8, (int)(outFile.BaseStream.Position - (type3TickOffsetAddress - 4)));
 
-                                        foreach (var type3 in Move.Cancels)
+                                        foreach (var type3 in move.Cancels)
                                         {
                                             outFile.Write(type3.BACVERint1);
                                             outFile.Write(type3.BACVERint2);
@@ -1704,7 +1713,7 @@ namespace MoveLib.BAC
                             }
                         }
 
-                        if (Move.Others != null && Move.Others.Length > 0)
+                        if (move.Others != null && move.Others.Length > 0)
                         {
                             List<long> type4Offsets = new List<long>();
                             List<long> IntOffsets = new List<long>();
@@ -1712,7 +1721,7 @@ namespace MoveLib.BAC
 
                             Common.WriteInt32ToPosition(outFile, type4TickOffsetAddress, (int)(outFile.BaseStream.Position - (type4TickOffsetAddress - 4)));
 
-                            foreach (var type4 in Move.Others)
+                            foreach (var type4 in move.Others)
                             {
                                 outFile.Write(type4.TickStart);
                                 outFile.Write(type4.TickEnd);
@@ -1720,7 +1729,7 @@ namespace MoveLib.BAC
 
                             Common.WriteInt32ToPosition(outFile, type4TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type4TickOffsetAddress - 4)));
 
-                            foreach (var type4 in Move.Others)
+                            foreach (var type4 in move.Others)
                             {
                                 if (type4.Ints.Length != 0)
                                 {
@@ -1736,7 +1745,7 @@ namespace MoveLib.BAC
                                 outFile.Write(0);
                             }
 
-                            foreach (var type4 in Move.Others)
+                            foreach (var type4 in move.Others)
                             {
                                 if (type4.Ints.Length != 0)
                                 {
@@ -1760,7 +1769,7 @@ namespace MoveLib.BAC
                                         //TheBACunknownoffsetthingie
                                         Common.WriteInt32ToPosition(outFile, type4TickOffsetAddress + 8, (int)(outFile.BaseStream.Position - (type4TickOffsetAddress - 4)));
 
-                                        foreach (var type4 in Move.Others)
+                                        foreach (var type4 in move.Others)
                                         {
                                             outFile.Write(type4.BACVERint1);
                                             outFile.Write(type4.BACVERint2);
@@ -1773,11 +1782,11 @@ namespace MoveLib.BAC
                             }
                         }
 
-                        if (Move.Hitboxes != null && Move.Hitboxes.Length > 0)
+                        if (move.Hitboxes != null && move.Hitboxes.Length > 0)
                         {
                             Common.WriteInt32ToPosition(outFile, HitboxTickOffsetAddress, (int)(outFile.BaseStream.Position - (HitboxTickOffsetAddress - 4)));
 
-                            foreach (var Hitbox in Move.Hitboxes)
+                            foreach (var Hitbox in move.Hitboxes)
                             {
                                 outFile.Write(Hitbox.TickStart);
                                 outFile.Write(Hitbox.TickEnd);
@@ -1785,7 +1794,7 @@ namespace MoveLib.BAC
 
                             Common.WriteInt32ToPosition(outFile, HitboxTickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (HitboxTickOffsetAddress - 4)));
 
-                            foreach (var Hitbox in Move.Hitboxes)
+                            foreach (var Hitbox in move.Hitboxes)
                             {
                                 outFile.Write(Hitbox.X);
                                 outFile.Write(Hitbox.Y);
@@ -1831,7 +1840,7 @@ namespace MoveLib.BAC
                                         //TheBACunknownoffsetthingie
                                         Common.WriteInt32ToPosition(outFile, HitboxTickOffsetAddress + 8, (int)(outFile.BaseStream.Position - (HitboxTickOffsetAddress - 4)));
 
-                                        foreach (var Hitbox in Move.Hitboxes)
+                                        foreach (var Hitbox in move.Hitboxes)
                                         {
                                             outFile.Write(Hitbox.BACVERint1);
                                             outFile.Write(Hitbox.BACVERint2);
@@ -1844,11 +1853,11 @@ namespace MoveLib.BAC
                             }
                         }
 
-                        if (Move.Hurtboxes != null && Move.Hurtboxes.Length > 0)
+                        if (move.Hurtboxes != null && move.Hurtboxes.Length > 0)
                         {
                             Common.WriteInt32ToPosition(outFile, HurtboxTickOffsetAddress, (int)(outFile.BaseStream.Position - (HurtboxTickOffsetAddress - 4)));
 
-                            foreach (var Hurtbox in Move.Hurtboxes)
+                            foreach (var Hurtbox in move.Hurtboxes)
                             {
                                 outFile.Write(Hurtbox.TickStart);
                                 outFile.Write(Hurtbox.TickEnd);
@@ -1856,7 +1865,7 @@ namespace MoveLib.BAC
 
                             Common.WriteInt32ToPosition(outFile, HurtboxTickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (HurtboxTickOffsetAddress - 4)));
                      
-                            foreach (var Hurtbox in Move.Hurtboxes)
+                            foreach (var Hurtbox in move.Hurtboxes)
                             {
                                 outFile.Write(Hurtbox.X);
                                 outFile.Write(Hurtbox.Y);
@@ -1905,7 +1914,7 @@ namespace MoveLib.BAC
                                         Common.WriteInt32ToPosition(outFile, HurtboxTickOffsetAddress + 8, (int)(outFile.BaseStream.Position - (HurtboxTickOffsetAddress - 4)));
 
 
-                                        foreach (var Hurtbox in Move.Hurtboxes)
+                                        foreach (var Hurtbox in move.Hurtboxes)
                                         {
                                             outFile.Write(Hurtbox.BACVERint1);
                                             outFile.Write(Hurtbox.BACVERint2);
@@ -1918,11 +1927,11 @@ namespace MoveLib.BAC
                             }
                         }
 
-                        if (Move.PhysicsBoxes != null && Move.PhysicsBoxes.Length > 0)
+                        if (move.PhysicsBoxes != null && move.PhysicsBoxes.Length > 0)
                         {
                             Common.WriteInt32ToPosition(outFile, type7TickOffsetAddress, (int)(outFile.BaseStream.Position - (type7TickOffsetAddress - 4)));
 
-                            foreach (var type7 in Move.PhysicsBoxes)
+                            foreach (var type7 in move.PhysicsBoxes)
                             {
                                 outFile.Write(type7.TickStart);
                                 outFile.Write(type7.TickEnd);
@@ -1930,7 +1939,7 @@ namespace MoveLib.BAC
 
                             Common.WriteInt32ToPosition(outFile, type7TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type7TickOffsetAddress - 4)));
            
-                            foreach (var type7 in Move.PhysicsBoxes)
+                            foreach (var type7 in move.PhysicsBoxes)
                             {
                                 outFile.Write(type7.X);
                                 outFile.Write(type7.Y);
@@ -1955,7 +1964,7 @@ namespace MoveLib.BAC
                                         //TheBACunknownoffsetthingie
                                         Common.WriteInt32ToPosition(outFile, type7TickOffsetAddress + 8, (int)(outFile.BaseStream.Position - (type7TickOffsetAddress - 4)));
 
-                                        foreach (var type7 in Move.PhysicsBoxes)
+                                        foreach (var type7 in move.PhysicsBoxes)
                                         {
                                             outFile.Write(type7.BACVERint1);
                                             outFile.Write(type7.BACVERint2);
@@ -1968,11 +1977,11 @@ namespace MoveLib.BAC
                             }
                         }
 
-                        if (Move.Animations != null && Move.Animations.Length > 0)
+                        if (move.Animations != null && move.Animations.Length > 0)
                         {
                             Common.WriteInt32ToPosition(outFile, type8TickOffsetAddress, (int)(outFile.BaseStream.Position - (type8TickOffsetAddress - 4)));
 
-                            foreach (var type8 in Move.Animations)
+                            foreach (var type8 in move.Animations)
                             {
                                 outFile.Write(type8.TickStart);
                                 outFile.Write(type8.TickEnd);
@@ -1980,7 +1989,7 @@ namespace MoveLib.BAC
 
                             Common.WriteInt32ToPosition(outFile, type8TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type8TickOffsetAddress - 4)));
 
-                            foreach (var type8 in Move.Animations)
+                            foreach (var type8 in move.Animations)
                             {
                                 outFile.Write(type8.Index);
                                 outFile.Write((short)type8.Type);
@@ -1998,7 +2007,7 @@ namespace MoveLib.BAC
                                         Common.WriteInt32ToPosition(outFile, type8TickOffsetAddress + 8, (int)(outFile.BaseStream.Position - (type8TickOffsetAddress - 4)));
 
 
-                                        foreach (var type8 in Move.Animations)
+                                        foreach (var type8 in move.Animations)
                                         {
                                             outFile.Write(type8.BACVERint1);
                                             outFile.Write(type8.BACVERint2);
@@ -2011,11 +2020,11 @@ namespace MoveLib.BAC
                             }
                         }
 
-                        if (Move.Type9s != null && Move.Type9s.Length > 0)
+                        if (move.Type9s != null && move.Type9s.Length > 0)
                         {
                             Common.WriteInt32ToPosition(outFile, type9TickOffsetAddress, (int)(outFile.BaseStream.Position - (type9TickOffsetAddress - 4)));
 
-                            foreach (var type9 in Move.Type9s)
+                            foreach (var type9 in move.Type9s)
                             {
                                 outFile.Write(type9.TickStart);
                                 outFile.Write(type9.TickEnd);
@@ -2023,7 +2032,7 @@ namespace MoveLib.BAC
 
                             Common.WriteInt32ToPosition(outFile, type9TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type9TickOffsetAddress - 4)));
 
-                            foreach (var type9 in Move.Type9s)
+                            foreach (var type9 in move.Type9s)
                             {
                                 outFile.Write(type9.Unknown1);
                                 outFile.Write(type9.Unknown2);
@@ -2037,7 +2046,7 @@ namespace MoveLib.BAC
                                         //TheBACunknownoffsetthingie
                                         Common.WriteInt32ToPosition(outFile, type9TickOffsetAddress + 8, (int)(outFile.BaseStream.Position - (type9TickOffsetAddress - 4)));
 
-                                        foreach (var type9 in Move.Type9s)
+                                        foreach (var type9 in move.Type9s)
                                         {
                                             outFile.Write(type9.BACVERint1);
                                             outFile.Write(type9.BACVERint2);
@@ -2050,11 +2059,11 @@ namespace MoveLib.BAC
                             }
                         }
 
-                        if (Move.SoundEffects != null && Move.SoundEffects.Length > 0)
+                        if (move.SoundEffects != null && move.SoundEffects.Length > 0)
                         {
                             Common.WriteInt32ToPosition(outFile, type10TickOffsetAddress, (int)(outFile.BaseStream.Position - (type10TickOffsetAddress - 4)));
 
-                            foreach (var type10 in Move.SoundEffects)
+                            foreach (var type10 in move.SoundEffects)
                             {
                                 outFile.Write(type10.TickStart);
                                 outFile.Write(type10.TickEnd);
@@ -2062,7 +2071,7 @@ namespace MoveLib.BAC
 
                             Common.WriteInt32ToPosition(outFile, type10TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type10TickOffsetAddress - 4)));
    
-                            foreach (var type10 in Move.SoundEffects)
+                            foreach (var type10 in move.SoundEffects)
                             {
                                 outFile.Write(type10.Unknown1);
                                 outFile.Write(type10.Unknown2);
@@ -2080,7 +2089,7 @@ namespace MoveLib.BAC
                                         //TheBACunknownoffsetthingie
                                         Common.WriteInt32ToPosition(outFile, type10TickOffsetAddress + 8, (int)(outFile.BaseStream.Position - (type10TickOffsetAddress - 4)));
 
-                                        foreach (var type10 in Move.SoundEffects)
+                                        foreach (var type10 in move.SoundEffects)
                                         {
                                             outFile.Write(type10.BACVERint1);
                                             outFile.Write(type10.BACVERint2);
@@ -2093,11 +2102,11 @@ namespace MoveLib.BAC
                             }
                         }
 
-                        if (Move.VisualEffects != null && Move.VisualEffects.Length > 0)
+                        if (move.VisualEffects != null && move.VisualEffects.Length > 0)
                         {
                             Common.WriteInt32ToPosition(outFile, type11TickOffsetAddress, (int)(outFile.BaseStream.Position - (type11TickOffsetAddress - 4)));
 
-                            foreach (var type11 in Move.VisualEffects)
+                            foreach (var type11 in move.VisualEffects)
                             {
                                 outFile.Write(type11.TickStart);
                                 outFile.Write(type11.TickEnd);
@@ -2105,13 +2114,13 @@ namespace MoveLib.BAC
 
                             Common.WriteInt32ToPosition(outFile, type11TickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (type11TickOffsetAddress - 4)));
 
-                            foreach (var type11 in Move.VisualEffects)
+                            foreach (var type11 in move.VisualEffects)
                             {
                                 outFile.Write(type11.Unknown1);
                                 outFile.Write(type11.Unknown2);
                                 outFile.Write(type11.Unknown3);
 
-                                outFile.Write(type11.Type);
+                                outFile.Write(type11.EffectId);
                                 outFile.Write(type11.Unknown5);
                                 outFile.Write(type11.AttachPoint);
 
@@ -2131,7 +2140,7 @@ namespace MoveLib.BAC
                                         //TheBACunknownoffsetthingie
                                         Common.WriteInt32ToPosition(outFile, type11TickOffsetAddress + 8, (int)(outFile.BaseStream.Position - (type11TickOffsetAddress - 4)));
 
-                                        foreach (var type11 in Move.VisualEffects)
+                                        foreach (var type11 in move.VisualEffects)
                                         {
                                             outFile.Write(type11.BACVERint1);
                                             outFile.Write(type11.BACVERint2);
@@ -2144,11 +2153,11 @@ namespace MoveLib.BAC
                             }
                         }
 
-                        if (Move.Positions != null && Move.Positions.Length > 0)
+                        if (move.Positions != null && move.Positions.Length > 0)
                         {
                             Common.WriteInt32ToPosition(outFile, PositionTickOffsetAddress, (int)(outFile.BaseStream.Position - (PositionTickOffsetAddress - 4)));
 
-                            foreach (var Position in Move.Positions)
+                            foreach (var Position in move.Positions)
                             {
                                 outFile.Write(Position.TickStart);
                                 outFile.Write(Position.TickEnd);
@@ -2156,7 +2165,7 @@ namespace MoveLib.BAC
 
                             Common.WriteInt32ToPosition(outFile, PositionTickOffsetAddress + 4, (int)(outFile.BaseStream.Position - (PositionTickOffsetAddress - 4)));
 
-                            foreach (var Position in Move.Positions)
+                            foreach (var Position in move.Positions)
                             {
                                 outFile.Write(Position.Movement);
                                 outFile.Write(Position.Flag);
@@ -2169,7 +2178,7 @@ namespace MoveLib.BAC
                                         //TheBACunknownoffsetthingie
                                         Common.WriteInt32ToPosition(outFile, PositionTickOffsetAddress + 8, (int)(outFile.BaseStream.Position - (PositionTickOffsetAddress - 4)));
 
-                                        foreach (var Position in Move.Positions)
+                                        foreach (var Position in move.Positions)
                                         {
                                             outFile.Write(Position.BACVERint1);
                                             outFile.Write(Position.BACVERint2);
@@ -2251,21 +2260,18 @@ namespace MoveLib.BAC
                 Debug.WriteLine("Done with HitboxEffects! Now doing Names... CurrentPos: " + outFile.BaseStream.Position.ToString("X"));
 
                 for (int i = 0; i < file.MoveLists.Length; i++)
-               {
+                {
                    List<long> NamePositions = new List<long>();
 
                    for (int j = 0; j < file.MoveLists[i].Moves.Length; j++)
-                    {
-                        if (file.MoveLists[i].Moves[j] == null)
-                        {
-                            continue;
-                        }
-
+                   {
+                       if (file.MoveLists[i].Moves[j] == null) continue;
+                       
                        NamePositions.Add(outFile.BaseStream.Position);
                        outFile.Write(file.MoveLists[i].Moves[j].Name.ToCharArray());
            
-                        outFile.Write((byte)0x00);
-                    }
+                       outFile.Write((byte)0x00);
+                   }
 
                    for (int k = 0; k < file.MoveLists[i].Moves.Length; k++)
                    {
@@ -2408,6 +2414,50 @@ namespace MoveLib.BAC
         }
     }
 
+    public class ForceEnumConverter : JsonConverter
+    {
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            serializer.Serialize(writer, value);
+        }
+
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        {
+            try
+            {
+                switch (reader.TokenType)
+                {
+                    case JsonToken.String:
+
+                        Debug.WriteLine($"\"{reader.Value}\" of type \"{reader.TokenType}\" found. Attempting conversion...");
+
+                        var enumText = reader.Value.ToString();
+                        var convertedStr = (int)Enum.Parse(typeof(ForceEnum), enumText);
+
+                        Debug.WriteLine($"\tConverted \"{reader.Value}\" to {convertedStr}");
+
+                        return convertedStr;
+
+                    case JsonToken.Integer:
+                        var convertedInt = Convert.ChangeType(reader.Value, objectType);
+
+                        return convertedInt;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new JsonSerializationException($"Error converting value {reader.Value} to type '{objectType}'.", ex);
+            }
+
+            throw new JsonReaderException($"{nameof(Force.Flag)} was not of type {JTokenType.String} nor {JTokenType.Integer}!");
+        }
+
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType == typeof(ForceEnum);
+        }
+    }
+
     public class BACFile
     {
         public MoveList[] MoveLists { get; set; }
@@ -2432,12 +2482,24 @@ namespace MoveLib.BAC
         public int TotalTicks { get; set; }
 
         public int ReturnToOriginalPosition { get; set; }
-        public float Slide { get; set; }
-        public float unk3 { get; set; }
-        public float unk4 { get; set; }
-        public float unk5 { get; set; }
-        public float unk6 { get; set; }
-        public float unk7 { get; set; }
+
+        public float XSpeedMultiplier { get; set; }
+        private float Slide { set => XSpeedMultiplier = value; }
+
+        public float YSpeedMultiplier { get; set; }
+        private float unk3 { set => YSpeedMultiplier = value; }
+
+        public float ZSpeedMultiplier { get; set; }
+        private float unk4 { set => ZSpeedMultiplier = value; }
+
+        public float XAcceleration { get; set; }
+        public float YAcceleration { get; set; }
+        public float ZAcceleration { get; set; }
+
+        private float unk5 { set => XAcceleration = value; }
+        private float unk6 { set => YAcceleration = value; }
+        private float unk7 { set => ZAcceleration = value; }
+
         public int Flag { get; set; }
         public int unk9 { get; set; }
 
@@ -2447,20 +2509,23 @@ namespace MoveLib.BAC
         public int HeaderSize { get; set; }
 
 
-        public short Unknown12 { get; set; }
-        public short Unknown13 { get; set; }
+        public short Unknown12 { get; set; } // Projectile GFX 1
+        public short Unknown13 { get; set; } // Projectile GFX 2
 
-        public short Unknown14 { get; set; }
-        public short Unknown15 { get; set; }
-        public short Unknown16 { get; set; }
-        public short Unknown17 { get; set; }
-        public float Unknown18 { get; set; }
-        public short Unknown19 { get; set; }
+        public short Unknown14 { get; set; } // ???
 
-        public short Unknown20 { get; set; }
+        public short Unknown15 { get; set; } // Projectile Hit Ground GFX 1
+        public short Unknown16 { get; set; } // Projectile Hit Ground GFX 2
 
-        public short Unknown21 { get; set; }
-        public short Unknown22 { get; set; }
+        public short Unknown17 { get; set; } // ???
+
+        public float Unknown18 { get; set; } // Projectile Size
+        public short Unknown19 { get; set; } // Projectile Hit Ground SFX
+
+        public short Unknown20 { get; set; } // ???
+
+        public short Unknown21 { get; set; } // ???
+        public short Unknown22 { get; set; } // ???
 
 
         public AutoCancel[] AutoCancels { get; set; }
@@ -2579,11 +2644,14 @@ namespace MoveLib.BAC
         public short MoveIndex { get; set; }
         public string MoveIndexName { get; set; }
 
-        public short Unknown1 { get; set; }
-        public short NumberOfInts { get; set; }
-        public int Unknown2 { get; set; }
+        public short ScriptStartTime { get; set; }
+        private short Unknown1 { set => ScriptStartTime = value; }
 
-        public int Unknown3 { get; set; }
+        public short NumberOfInts { get; set; }
+
+        public int Unknown2 { get; set; } // Something to do with SkillID
+        public int Unknown3 { get; set; } // if Unknown2 is 24, this value is the Skill ID used for trials
+
         public int Unknown4 { get; set; }
 
         public int Offset { get; set; }
@@ -2620,7 +2688,9 @@ namespace MoveLib.BAC
         public int BACVERint4 { get; set; }
 
         public float Amount { get; set; }
-        public ForceEnum Flag { get; set; }
+        [JsonProperty("Flag")]
+        [JsonConverter(typeof(ForceEnumConverter))]
+        public int Flag { get; set; }
     }
 
     public enum ForceEnum
@@ -2832,7 +2902,10 @@ namespace MoveLib.BAC
         public short Unknown1 { get; set; }
         public short Unknown2 { get; set; }
         public short Unknown3 { get; set; }
-        public short Type { get; set; }
+
+        public short EffectId { get; set; }
+        private short Type { set => EffectId = value; }
+
         public short Unknown5 { get; set; }
         public short AttachPoint { get; set; }
 

@@ -28,7 +28,7 @@ namespace RealtimeEditor
                     var success = _memory.OpenProcess("StreetFighterV");
                     if (!success)
                     {
-                        writeToOutput("Game process not found!");
+                        WriteToOutput("Game process not found!");
                         return null;
                     }
                 }
@@ -41,7 +41,7 @@ namespace RealtimeEditor
             InitializeComponent();
         }
 
-        private void writeToOutput(string output)
+        private void WriteToOutput(string output)
         {
             Invoke((MethodInvoker)delegate
             {
@@ -50,13 +50,20 @@ namespace RealtimeEditor
             });
         }
 
-        private void bTest_Click(object sender, EventArgs e)
+        private void OnClick_ScanButton(object sender, EventArgs e)
         {
+            if (Memory == null)
+            {
+                // SFV process was not found. Don't scan.
+                return;
+            }
+
+            // Reset combo boxes and file list.
             cbBAC.Items.Clear();
             cbBCM.Items.Clear();
             MemoryFileList = new List<MemoryFile>();
 
-            writeToOutput("Scanning game for BAC/BCM files...");
+            WriteToOutput("Scanning game for BAC/BCM files...");
             Application.DoEvents();
 
             BACAddresses = Memory.MemoryScan(Encoding.UTF8.GetBytes("#BAC"));
@@ -64,19 +71,28 @@ namespace RealtimeEditor
 
             foreach (var bacAddress in BACAddresses)
             {
-                Console.WriteLine("BAC at: " + bacAddress.ToString("X"));
+                Console.WriteLine($@"BAC at: {bacAddress:X}");
             }
 
             foreach (var bcmAddress in BCMAddresses)
             {
-                Console.WriteLine("BCM at: " + bcmAddress.ToString("X"));
+                Console.WriteLine($@"BCM at: {bcmAddress:X}");
             }
+
+            //CHANGED: Checks if Originals exists, and creates it if not. If it does exist, checks for empty folder.
+            if (!Directory.Exists("Originals")) Directory.CreateDirectory("Originals");
+            if (!Directory.EnumerateFiles("Originals").Any())
+            {
+                WriteToOutput("No files in Originals folder. Please add the uasset files for the current character to the \"Originals\" folder.");
+                return;
+            }
+            // ---
 
             foreach (var file in Directory.GetFiles("Originals"))
             {
                 if (!file.ToLower().EndsWith(".uasset"))
                 {
-                    continue;
+                    continue; // Skip to next file if it's not a .uasset
                 }
 
                 var fileBytes = File.ReadAllBytes(file);
@@ -95,7 +111,7 @@ namespace RealtimeEditor
                         MemoryFileList.Add(new MemoryFile()
                         {
                             OriginalAddress = bacAddress,
-                            Name = Path.GetFileName(file),
+                            UassetFileName = Path.GetFileName(file),
                             Type = MemoryFileType.BAC
                         });
                         found = true;
@@ -105,7 +121,7 @@ namespace RealtimeEditor
 
                 if (found)
                 {
-                    continue;
+                    continue; // BAC was found. Skip to next file.
                 }
 
                 foreach (var bcmAddress in BCMAddresses)
@@ -117,7 +133,7 @@ namespace RealtimeEditor
                         MemoryFileList.Add(new MemoryFile()
                         {
                             OriginalAddress = bcmAddress,
-                            Name = Path.GetFileName(file),
+                            UassetFileName = Path.GetFileName(file),
                             Type = MemoryFileType.BCM
                         });
                         break;
@@ -134,7 +150,7 @@ namespace RealtimeEditor
                     MemoryFileList.Add(new MemoryFile()
                     {
                         OriginalAddress = bacAddress,
-                        Name = "Unknown" + counter,
+                        UassetFileName = "Unknown" + counter,
                         Type = MemoryFileType.BAC
                     });
                 }
@@ -150,7 +166,7 @@ namespace RealtimeEditor
                     MemoryFileList.Add(new MemoryFile()
                     {
                         OriginalAddress = bcmAddress,
-                        Name = "Unknown" + counter,
+                        UassetFileName = "Unknown" + counter,
                         Type = MemoryFileType.BCM
                     });
                 }
@@ -159,24 +175,30 @@ namespace RealtimeEditor
             foreach (var memoryFile in MemoryFileList)
             {
                 memoryFile.Pointers = Memory.MemoryScan(BitConverter.GetBytes(memoryFile.OriginalAddress));
-                Console.WriteLine("\nFile:\nOriginalAddress: " + memoryFile.OriginalAddress.ToString("X") + "\nName: " + memoryFile.Name);
+
+                Console.WriteLine("\nFile:\n" +
+                                  $"OriginalAddress: {memoryFile.OriginalAddress:X}\n" +
+                                  $@"Name: {memoryFile.UassetFileName}");
+
                 foreach (var pointer in memoryFile.Pointers)
-                {
-                    Console.WriteLine("Pointer: " + pointer.ToString("X"));
-                }
+                    Console.WriteLine($@"Pointer: {pointer:X}");
             }
 
             foreach (var memoryFile in MemoryFileList)
             {
+                var uassetName = memoryFile.UassetFileName;
+
+                if (uassetName == null) continue;
+
                 if (memoryFile.Type == MemoryFileType.BAC)
                 {
-                    cbBAC.Items.Add(Path.GetFileName(memoryFile.Name));
+                    cbBAC.Items.Add(uassetName);
                 }
                 else
                 {
-                    cbBCM.Items.Add(Path.GetFileName(memoryFile.Name));
+                    cbBCM.Items.Add(uassetName);
                 }
-                writeToOutput("File: " + memoryFile.Name + " at: " + memoryFile.OriginalAddress.ToString("X"));
+                WriteToOutput($"File: {uassetName} at: {memoryFile.OriginalAddress:X}");
             }
 
             if (cbBAC.Items.Count > 0)
@@ -190,49 +212,23 @@ namespace RealtimeEditor
             }
 
             Console.WriteLine("Done.");
-            writeToOutput("Ready to load JSON.");
+            WriteToOutput("Ready to load JSON.");
         }
 
         private void bSelectBACJson_Click(object sender, EventArgs e)
         {
-            FileDialog dialog = new OpenFileDialog();
-            dialog.Filter = "JSON-file | *.json";
-            var result = dialog.ShowDialog();
-
-            if (result != DialogResult.OK)
-            {
-                return;
-            }
-
-            MemoryFileList.First(m => m.Name == cbBAC.SelectedItem.ToString()).JsonFile = dialog.FileName;
-
-            foreach (var memoryFile in MemoryFileList)
-            {
-                Console.WriteLine("File:\nOriginalAddress: " + memoryFile.OriginalAddress.ToString("X") + "\nName: " + memoryFile.Name + "\nJSON: " + memoryFile.JsonFile );
-            }
-
-            lBAC.Text = dialog.FileName;
-
-            var path = Path.GetDirectoryName(dialog.FileName);
-
-            if (!fileSystemWatchers.ContainsKey(path))
-            {
-                fileSystemWatchers.Add(path, new FileSystemWatcher(path));
-            }
-
-            foreach (var fileSystemWatcher in fileSystemWatchers)
-            {
-                fileSystemWatcher.Value.EnableRaisingEvents = true;
-                fileSystemWatcher.Value.Changed -= FileModified;
-                fileSystemWatcher.Value.Changed += FileModified;
-            }
-
-            UpdateFileInMemory(dialog.FileName);
-            writeToOutput("Loaded: " + Path.GetFileName(dialog.FileName));
+            SelectJson(sender, e);
         }
 
         private void bSelectBCMJson_Click(object sender, EventArgs e)
         {
+            SelectJson(sender, e);
+        }
+
+        private void SelectJson(object sender, EventArgs e)
+        {
+            #region Show "Open File" dialog
+
             FileDialog dialog = new OpenFileDialog();
             dialog.Filter = "JSON-file | *.json";
             var result = dialog.ShowDialog();
@@ -242,17 +238,31 @@ namespace RealtimeEditor
                 return;
             }
 
-            MemoryFileList.First(m => m.Name == cbBCM.SelectedItem.ToString()).JsonFile = dialog.FileName;
+            #endregion
+
+            bool isBAC = ((Button)sender).Name.Contains("BAC");
+
+            var cb = isBAC ? cbBAC : cbBCM;
+
+            var fileName = dialog.FileName;
+
+            MemoryFileList.First(m => m.UassetFileName == cb.SelectedItem.ToString()).JsonFilePath = fileName;
 
             foreach (var memoryFile in MemoryFileList)
             {
-                Console.WriteLine("File:\nOriginalAddress: " + memoryFile.OriginalAddress.ToString("X") + "\nName: " + memoryFile.Name + "\nJSON: " + memoryFile.JsonFile);
+                Console.WriteLine($"File:\nOriginalAddress: {memoryFile.OriginalAddress:X}\n" +
+                                  $"Name: {memoryFile.UassetFileName}\n" +
+                                  $"JSON: {memoryFile.JsonFilePath}");
             }
 
-            lBCM.Text = dialog.FileName;
-            var path = Path.GetDirectoryName(dialog.FileName);
+            var label = isBAC ? lBAC : lBCM;
+            label.Text = fileName;
 
-            if (!fileSystemWatchers.ContainsKey(path))
+            var path = Path.GetDirectoryName(fileName);
+            var shortFileName = Path.GetFileName(fileName);
+
+            // if no Watcher exists for the directory, add one
+            if (shortFileName != null && path != null && !fileSystemWatchers.ContainsKey(path))
             {
                 fileSystemWatchers.Add(path, new FileSystemWatcher(path));
             }
@@ -264,19 +274,24 @@ namespace RealtimeEditor
                 fileSystemWatcher.Value.Changed += FileModified;
             }
 
-            UpdateFileInMemory(dialog.FileName);
-            writeToOutput("Loaded: " + Path.GetFileName(dialog.FileName));
+            UpdateFileInMemory(fileName);
+            WriteToOutput("Loaded: " + shortFileName);
         }
 
-        void FileModified(object sender, FileSystemEventArgs e)
+        private void FileModified(object sender, FileSystemEventArgs e)
         {
+            // Check if we care about the modified file...
+            // TODO
+            if (!MemoryFileList.Exists(m => m.JsonFilePath == e.FullPath)) return;
+
             Console.WriteLine("File modified: " + e.FullPath);
             Console.WriteLine("Updating file in memory");
-            writeToOutput("File modified: " + e.Name);
+            WriteToOutput("File modified: " + e.Name);
             WaitReady(e.FullPath);
             UpdateFileInMemory(e.FullPath);
         }
 
+        // Wait until the file is ready to be accessed
         public static void WaitReady(string fileName)
         {
             while (true)
@@ -285,24 +300,24 @@ namespace RealtimeEditor
                 {
                     using (Stream stream = File.Open(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.Read))
                     {
-                        if (stream != null)
+                        if (stream != Stream.Null)
                         {
-                            Trace.WriteLine(string.Format("Output file {0} ready.", fileName));
+                            Trace.WriteLine($"Output file {fileName} ready.");
                             break;
                         }
                     }
                 }
                 catch (FileNotFoundException ex)
                 {
-                    Trace.WriteLine(string.Format("Output file {0} not yet ready ({1})", fileName, ex.Message));
+                    Trace.WriteLine($"Output file {fileName} not found: ({ex.Message})");
                 }
                 catch (IOException ex)
                 {
-                   Trace.WriteLine(string.Format("Output file {0} not yet ready ({1})", fileName, ex.Message));
+                   Trace.WriteLine($"Output file {fileName} not yet ready ({ex.Message})");
                 }
                 catch (UnauthorizedAccessException ex)
                 {
-                    Trace.WriteLine(string.Format("Output file {0} not yet ready ({1})", fileName, ex.Message));
+                    Trace.WriteLine($"Output file {fileName} not yet ready ({ex.Message})");
                 }
                 Thread.Sleep(500);
             }
@@ -310,55 +325,54 @@ namespace RealtimeEditor
 
         private void UpdateFileInMemory(string fileName)
         {
-            if (MemoryFileList.Exists(m => m.JsonFile == fileName))
+            if (!MemoryFileList.Exists(m => m.JsonFilePath == fileName)) return;
+
+            var tempFileName = "temp_" + Path.GetFileName(fileName);
+            var success = BAC.JsonToBac(fileName, tempFileName);
+
+            if (!success)
             {
-                var tempFileName = "temp_" + Path.GetFileName(fileName);
-                var success = BAC.JsonToBac(fileName, tempFileName);
-
-                if (!success)
-                {
-                    success = BCM.JsonToBcm(fileName,
-                        tempFileName);
-                }
-
-                if (!success)
-                {
-                    lbOutput.Items.Add("Couldn't parse JSON");
-                    return;
-                }
-
-                var memFile = MemoryFileList.First(m => m.JsonFile == fileName);
-
-                var fileBytes = File.ReadAllBytes(tempFileName).ToList();
-                fileBytes.RemoveRange(0, BitConverter.ToInt32(fileBytes.ToArray(), 0x18) + 36);
-
-                if (memFile.NewAddress == 0)
-                {
-                    Console.WriteLine("Allocating memory space...");
-                    var newAddress = Memory.AllocAndWriteFileToMemory(fileBytes.ToArray());
-                    Console.WriteLine("Got some space at: " + newAddress.ToString("X"));
-                    memFile.NewAddress = newAddress;
-                    Console.WriteLine("Wrote file to: " + newAddress.ToString("X"));
-
-                    foreach (var pointer in memFile.Pointers)
-                    {
-                        Memory.Write(pointer, BitConverter.GetBytes(memFile.NewAddress));
-                        Console.WriteLine("Updated pointer at: " + pointer.ToString("X"));
-                    }
-                }
-
-                Memory.Write(memFile.NewAddress, fileBytes.ToArray());
-                Console.WriteLine("Wrote file to: " + memFile.NewAddress.ToString("X"));
-                writeToOutput("Wrote: " + Path.GetFileName(fileName) + " to " + memFile.Name + " - " +
-                              memFile.NewAddress.ToString("X"));
+                success = BCM.JsonToBcm(fileName,
+                    tempFileName);
             }
+
+            if (!success)
+            {
+                lbOutput.Items.Add("Couldn't parse JSON");
+                return;
+            }
+
+            var memFile = MemoryFileList.First(m => m.JsonFilePath == fileName);
+
+            var fileBytes = File.ReadAllBytes(tempFileName).ToList();
+            fileBytes.RemoveRange(0, BitConverter.ToInt32(fileBytes.ToArray(), 0x18) + 36);
+
+            if (memFile.NewAddress == 0)
+            {
+                Console.WriteLine("Allocating memory space...");
+                var newAddress = Memory.AllocAndWriteFileToMemory(fileBytes.ToArray());
+                Console.WriteLine("Got some space at: " + newAddress.ToString("X"));
+                memFile.NewAddress = newAddress;
+                Console.WriteLine("Wrote file to: " + newAddress.ToString("X"));
+
+                foreach (var pointer in memFile.Pointers)
+                {
+                    Memory.Write(pointer, BitConverter.GetBytes(memFile.NewAddress));
+                    Console.WriteLine("Updated pointer at: " + pointer.ToString("X"));
+                }
+            }
+
+            Memory.Write(memFile.NewAddress, fileBytes.ToArray());
+            Console.WriteLine("Wrote file to: " + memFile.NewAddress.ToString("X"));
+            WriteToOutput("Wrote: " + Path.GetFileName(fileName) + " to " + memFile.UassetFileName + " - " +
+                          memFile.NewAddress.ToString("X"));
         }
 
         private void cbBAC_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (MemoryFileList.Exists(m => m.Name == cbBAC.SelectedItem.ToString()))
+            if (MemoryFileList.Exists(m => m.UassetFileName == cbBAC.SelectedItem.ToString()))
             {
-                lBAC.Text = MemoryFileList.First(m => m.Name == cbBAC.SelectedItem.ToString()).JsonFile;
+                lBAC.Text = MemoryFileList.First(m => m.UassetFileName == cbBAC.SelectedItem.ToString()).JsonFilePath;
             }
 
             if (lBAC.Text == "")
@@ -369,9 +383,9 @@ namespace RealtimeEditor
 
         private void cbBCM_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (MemoryFileList.Exists(m => m.Name == cbBCM.SelectedItem.ToString()))
+            if (MemoryFileList.Exists(m => m.UassetFileName == cbBCM.SelectedItem.ToString()))
             {
-                lBCM.Text = MemoryFileList.First(m => m.Name == cbBCM.SelectedItem.ToString()).JsonFile;
+                lBCM.Text = MemoryFileList.First(m => m.UassetFileName == cbBCM.SelectedItem.ToString()).JsonFilePath;
             }
 
             if (lBCM.Text == "")
@@ -398,11 +412,8 @@ namespace RealtimeEditor
             cbBAC.Items.Clear();
             cbBCM.Items.Clear();
             MemoryFileList = new List<MemoryFile>();
-            writeToOutput("Game restored");
-        }
-
-        private void MainForm_Load(object sender, EventArgs e)
-        {
+            WriteToOutput("Game restored");
+            lBAC.Text = lBCM.Text = "No JSON-file set.";
         }
     }
 
@@ -410,8 +421,8 @@ namespace RealtimeEditor
     {
         public long OriginalAddress { get; set; }
         public long NewAddress { get; set; }
-        public string Name { get; set; }
-        public string JsonFile { get; set; }
+        public string UassetFileName { get; set; }
+        public string JsonFilePath { get; set; }
         public MemoryFileType Type { get; set; }
         public List<long> Pointers { get; set; } 
     }

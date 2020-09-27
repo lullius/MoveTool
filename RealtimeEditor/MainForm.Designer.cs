@@ -28,6 +28,8 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.lbOutput = new System.Windows.Forms.ListBox();
             this.bScan = new System.Windows.Forms.Button();
             this.cbBAC = new System.Windows.Forms.ComboBox();
@@ -39,6 +41,8 @@
             this.bRestore = new System.Windows.Forms.Button();
             this.gbBAC = new System.Windows.Forms.GroupBox();
             this.gbBCM = new System.Windows.Forms.GroupBox();
+            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.toolTip2 = new System.Windows.Forms.ToolTip(this.components);
             this.gbBAC.SuspendLayout();
             this.gbBCM.SuspendLayout();
             this.SuspendLayout();
@@ -53,21 +57,22 @@
             // 
             // bScan
             // 
-            this.bScan.Location = new System.Drawing.Point(200, 33);
+            this.bScan.Location = new System.Drawing.Point(200, 29);
             this.bScan.Name = "bScan";
             this.bScan.Size = new System.Drawing.Size(101, 23);
             this.bScan.TabIndex = 3;
             this.bScan.Text = "Scan";
+            this.toolTip2.SetToolTip(this.bScan, resources.GetString("bScan.ToolTip"));
             this.bScan.UseVisualStyleBackColor = true;
-            this.bScan.Click += new System.EventHandler(this.bTest_Click);
+            this.bScan.Click += new System.EventHandler(this.OnClick_ScanButton);
             // 
             // cbBAC
             // 
             this.cbBAC.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cbBAC.FormattingEnabled = true;
-            this.cbBAC.Location = new System.Drawing.Point(9, 21);
+            this.cbBAC.Location = new System.Drawing.Point(6, 19);
             this.cbBAC.Name = "cbBAC";
-            this.cbBAC.Size = new System.Drawing.Size(167, 21);
+            this.cbBAC.Size = new System.Drawing.Size(170, 21);
             this.cbBAC.TabIndex = 4;
             this.cbBAC.SelectedIndexChanged += new System.EventHandler(this.cbBAC_SelectedIndexChanged);
             // 
@@ -75,9 +80,9 @@
             // 
             this.cbBCM.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cbBCM.FormattingEnabled = true;
-            this.cbBCM.Location = new System.Drawing.Point(9, 21);
+            this.cbBCM.Location = new System.Drawing.Point(6, 19);
             this.cbBCM.Name = "cbBCM";
-            this.cbBCM.Size = new System.Drawing.Size(164, 21);
+            this.cbBCM.Size = new System.Drawing.Size(169, 21);
             this.cbBCM.TabIndex = 5;
             this.cbBCM.SelectedIndexChanged += new System.EventHandler(this.cbBCM_SelectedIndexChanged);
             // 
@@ -99,31 +104,35 @@
             // 
             // bSelectBACJson
             // 
-            this.bSelectBACJson.Location = new System.Drawing.Point(6, 48);
+            this.bSelectBACJson.Location = new System.Drawing.Point(6, 46);
             this.bSelectBACJson.Name = "bSelectBACJson";
             this.bSelectBACJson.Size = new System.Drawing.Size(170, 23);
             this.bSelectBACJson.TabIndex = 8;
             this.bSelectBACJson.Text = "Select Json";
+            this.toolTip1.SetToolTip(this.bSelectBACJson, resources.GetString("SelectJson_ToolTipText"));
             this.bSelectBACJson.UseVisualStyleBackColor = true;
             this.bSelectBACJson.Click += new System.EventHandler(this.bSelectBACJson_Click);
             // 
             // bSelectBCMJson
             // 
-            this.bSelectBCMJson.Location = new System.Drawing.Point(9, 48);
+            this.bSelectBCMJson.Location = new System.Drawing.Point(6, 46);
             this.bSelectBCMJson.Name = "bSelectBCMJson";
-            this.bSelectBCMJson.Size = new System.Drawing.Size(164, 23);
+            this.bSelectBCMJson.Size = new System.Drawing.Size(169, 23);
             this.bSelectBCMJson.TabIndex = 9;
             this.bSelectBCMJson.Text = "Select Json";
+            this.toolTip1.SetToolTip(this.bSelectBCMJson, resources.GetString("SelectJson_ToolTipText"));
             this.bSelectBCMJson.UseVisualStyleBackColor = true;
             this.bSelectBCMJson.Click += new System.EventHandler(this.bSelectBCMJson_Click);
             // 
             // bRestore
             // 
-            this.bRestore.Location = new System.Drawing.Point(200, 60);
+            this.bRestore.Location = new System.Drawing.Point(200, 58);
             this.bRestore.Name = "bRestore";
             this.bRestore.Size = new System.Drawing.Size(101, 23);
             this.bRestore.TabIndex = 10;
             this.bRestore.Text = "Restore Game";
+            this.toolTip1.SetToolTip(this.bRestore, "Revert to using the files you started the game with.\r\n(Does not affect your JSONs" +
+        ".)");
             this.bRestore.UseVisualStyleBackColor = true;
             this.bRestore.Click += new System.EventHandler(this.bRestore_Click);
             // 
@@ -151,6 +160,12 @@
             this.gbBCM.TabStop = false;
             this.gbBCM.Text = "BCM";
             // 
+            // toolTip2
+            // 
+            this.toolTip2.AutoPopDelay = 15000;
+            this.toolTip2.InitialDelay = 500;
+            this.toolTip2.ReshowDelay = 100;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -167,7 +182,6 @@
             this.ShowIcon = false;
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.Text = "Real-time editor";
-            this.Load += new System.EventHandler(this.MainForm_Load);
             this.gbBAC.ResumeLayout(false);
             this.gbBCM.ResumeLayout(false);
             this.ResumeLayout(false);
@@ -187,6 +201,8 @@
         private System.Windows.Forms.Button bRestore;
         private System.Windows.Forms.GroupBox gbBAC;
         private System.Windows.Forms.GroupBox gbBCM;
+        private System.Windows.Forms.ToolTip toolTip1;
+        private System.Windows.Forms.ToolTip toolTip2;
     }
 }
 

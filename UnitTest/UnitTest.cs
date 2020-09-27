@@ -19,6 +19,23 @@ namespace UnitTest
         */
 
         [TestMethod]
+        public void OldModifiedBACJson_ShouldReadOldNames()
+        {
+            var filePath = "Test Files/BAC_RYU.json";
+
+            try
+            {
+                var isBacSuccessful = BAC.JsonToBac(filePath, "fileOutput (unused in test)");
+
+                Assert.IsTrue(isBacSuccessful);
+            }
+            catch (System.Exception e)
+            {
+                Debug.WriteLine("Caught exception:\n" + e.Message);
+            }
+        }
+
+        [TestMethod]
         public void TestBAC()
         {
             /*
@@ -29,7 +46,7 @@ namespace UnitTest
 
             List<string> exceptions = new List<string>();
 
-            foreach (var file in Directory.GetFiles(@"Originals\BAC"))
+            foreach (var file in Directory.GetFiles(@"Originals", @"BAC_???.uasset"))
             {
                 var originalBytes = File.ReadAllBytes(file);
                 var bac = BAC.FromUassetFile(file);
@@ -78,9 +95,9 @@ namespace UnitTest
         }
 
         [TestMethod]
-        public void TestBCMeff()
+        public void TestBACeff()
         {
-            foreach (var file in Directory.GetFiles(@"Originals\BACeff"))
+            foreach (var file in Directory.GetFiles(@"Originals", @"BAC_???_eff.uasset"))
             {
                 var originalBytes = File.ReadAllBytes(file);
                 var bac = BAC.FromUassetFile(file);
@@ -101,7 +118,7 @@ namespace UnitTest
         [TestMethod]
         public void TestBCM()
         {
-            foreach (var file in Directory.GetFiles(@"Originals\BCM"))
+            foreach (var file in Directory.GetFiles(@"Originals", @"BCM*"))
             {
                 var originalBytes = File.ReadAllBytes(file);
                 var bcm = BCM.FromUassetFile(file);

@@ -230,7 +230,7 @@ namespace RealtimeEditor
 
             Parallel.ForEach(regions, memoryRegion =>
             {
-                if (memoryRegion.Size < 2000000)
+                if (memoryRegion.Size < 4000000)
                 {
                     foundAddresses.AddRange(
                         MemoryScan(bytesToFind,

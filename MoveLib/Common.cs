@@ -6,13 +6,24 @@ using System.Text;
 
 namespace MoveLib
 {
+    /// <summary>
+    /// Common functions used by multiple MoveLib classes.
+    /// </summary>
     public static class Common
     {
+        public const int ADDRESS_CONTENT_PTR = 0x18; // Address of pointer to content OR size of metadata, depending on how you look at it.
+        public const int ADDRESS_FOOTER_PTR  = 0x93;
+
+        /// <summary>
+        /// Removes the Uasset's metadata section (header) and returns the remainder.
+        /// </summary>
+        /// <param name="fileBytes"></param>
+        /// <returns>The main content/data of the Uasset.</returns>
         public static byte[] RemoveUassetHeader(byte[] fileBytes)
         {
             var tempList = fileBytes.ToList();
 
-            int sizeOfHeader = BitConverter.ToInt32(fileBytes, 0x18);
+            int sizeOfHeader = BitConverter.ToInt32(fileBytes, ADDRESS_CONTENT_PTR);
 
             tempList.RemoveRange(0, sizeOfHeader + 36);
             return tempList.ToArray();
@@ -20,14 +31,12 @@ namespace MoveLib
 
         public static byte[] GetUassetHeader(byte[] fileBytes)
         {
-            var tempList = fileBytes.ToList();
+            int sizeOfHeader = BitConverter.ToInt32(fileBytes, ADDRESS_CONTENT_PTR); // get the value @18 - the size of the header (or pointer to the end of the header)
 
-            int sizeOfHeader = BitConverter.ToInt32(fileBytes, 0x18);
+            byte[] headerBytes = new byte[sizeOfHeader];
+            Array.Copy(fileBytes, headerBytes, sizeOfHeader);
 
-            byte[] array = new byte[sizeOfHeader];
-            tempList.CopyTo(0, array, 0, sizeOfHeader);
-
-            return array;
+            return headerBytes;
         }
 
         public static List<byte> CreateUassetFile(List<byte> fileBytes, byte[] uassetHeader)
@@ -37,7 +46,7 @@ namespace MoveLib
                 0x09, 0x00, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x00
-            });
+            }); // "None" bytes (+ 4 extra zeros?)
 
             var tempLengthBytes = BitConverter.GetBytes(fileBytes.Count);
 
